@@ -6,8 +6,6 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true
   },
-  // Set proper root for Vercel deployment
-  outputFileTracingRoot: process.cwd(),
 };
 
 export default nextConfig;
