@@ -36,17 +36,17 @@ const SHIPPING_OPTIONS: ShippingOption[] = [
   {
     id: 'standard',
     name: 'Standard Shipping',
-    price: 1.00,
+    price: 0.1,
     estimatedDays: '5-7',
-    description: 'Standard delivery',
+    description: 'Economy delivery',
     type: 'standard'
   },
   {
     id: 'express',
     name: 'Express Shipping',
-    price: 12.99,
+    price: 1.00,
     estimatedDays: '2-3',
-    description: 'Express delivery',
+    description: 'Fast delivery',
     type: 'express'
   },
   {
@@ -170,12 +170,38 @@ export default function ShippingForm({ data, onChange, errors }: ShippingFormPro
               />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{option.name}</h3>
-                    <p className="text-sm text-gray-600">{option.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">{option.estimatedDays} business days</p>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-medium text-gray-900">{option.name}</h3>
+                      {option.type === 'standard' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          💰 Best Value
+                        </span>
+                      )}
+                      {option.type === 'express' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          ⚡ Popular
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex items-center space-x-4">
+                      <p className="text-sm text-gray-600">{option.description}</p>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {option.estimatedDays} business days
+                      </div>
+                    </div>
                   </div>
-                  <span className="font-medium text-gray-900">${option.price.toFixed(2)}</span>
+                  <div className="ml-4 text-right">
+                    <span className="text-lg font-bold text-gray-900">
+                      ${option.price.toFixed(2)}
+                    </span>
+                    {option.price < 1 && (
+                      <p className="text-xs text-green-600 font-medium">Economy</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </label>
@@ -186,16 +212,16 @@ export default function ShippingForm({ data, onChange, errors }: ShippingFormPro
           <p className="mt-2 text-sm text-red-600">{errors.shippingMethod}</p>
         )}
 
-        <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
+        <div className="mt-6 p-4 bg-green-50 rounded-lg">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="h-5 w-5 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div className="text-sm text-yellow-800">
-              <p className="font-medium">Free shipping available</p>
-              <p className="mt-1">Free shipping on orders over $50</p>
+            <div className="text-sm text-green-800">
+              <p className="font-medium">🎉 Amazing shipping deals!</p>
+              <p className="mt-1">Standard shipping only $0.10 • Express just $1.00</p>
             </div>
           </div>
         </div>
