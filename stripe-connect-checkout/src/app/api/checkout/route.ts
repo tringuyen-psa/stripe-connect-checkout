@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { retrieveCheckoutSession } from '@/lib/stripe-connect';
+import { STRIPE_CONNECT_ACCOUNT_ID } from '@/lib/stripe-connect';
+import Stripe from 'stripe';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,20 +15,49 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await retrieveCheckoutSession(sessionId);
+    console.log('🔍 Retrieving checkout session:', sessionId);
+    console.log('🏪 Using Connect Account:', STRIPE_CONNECT_ACCOUNT_ID);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
+    // Sử dụng Connect Stripe instance để retrieve session
+    if (STRIPE_CONNECT_ACCOUNT_ID) {
+      const connectStripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-09-30.clover',
+        typescript: true,
+        stripeAccount: STRIPE_CONNECT_ACCOUNT_ID,
+      });
+
+      const session = await connectStripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['line_items', 'payment_intent', 'customer'],
+      });
+
+      console.log('✅ Successfully retrieved checkout session from Connect account');
+      console.log('📋 Session data:', {
+        id: session.id,
+        payment_status: session.payment_status,
+        customer: session.customer,
+        amount_total: session.amount_total,
+        currency: session.currency,
+        created: session.created,
+      });
+
+      return NextResponse.json(session);
+    } else {
+      // Fallback: dùng function cũ nếu không có Connect account
+      const result = await retrieveCheckoutSession(sessionId);
+
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || 'Failed to retrieve checkout session' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(result.data);
     }
-
-    return NextResponse.json(result.data);
   } catch (error) {
-    console.error('Checkout API Error:', error);
+    console.error('❌ Checkout API Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCart } from '@/hooks/useCart';
 import ContactForm, { ContactFormData } from './ContactForm';
 import ShippingForm, { ShippingFormData, ShippingOption } from './ShippingForm';
-import PaymentMethodSelector, { PaymentMethod } from './PaymentMethodSelector';
 import OrderSummary from './OrderSummary';
 import ShopifyButton from './ShopifyButton';
 import ShopifyCard from './ShopifyCard';
-import { PAYMENT_METHODS } from './PaymentMethodSelector';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+// Xóa các imports không dùng
+// import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+// import { loadStripe } from '@stripe/stripe-js';
 
 type CheckoutStep = 'contact' | 'shipping' | 'payment' | 'review' | 'complete';
 
@@ -20,7 +18,6 @@ export default function ShopifyCheckoutFlow() {
   const { cart, clearCart } = useCart();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('contact');
   const [isLoading, setIsLoading] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form data
@@ -42,8 +39,7 @@ export default function ShopifyCheckoutFlow() {
     shippingMethod: ''
   });
 
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(PAYMENT_METHODS[0]);
-  const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
+    const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
 
   // Calculate order totals
   const subtotal = cart.subtotal;
@@ -67,36 +63,92 @@ export default function ShopifyCheckoutFlow() {
     }
   }, [shippingData.shippingMethod, selectedShippingOption]);
 
-  const createPaymentIntent = useCallback(async () => {
+  const createCheckoutSession = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/create-payment-intent', {
+      console.log('🎯 TẠO CHECKOUT SESSION VỚI TỔNG TIỀN CUỐI CÙNG');
+      console.log('💰 Total amount:', total.toFixed(2) + ' USD');
+      console.log('📦 Số sản phẩm:', cart.items.length);
+
+      // Lấy sản phẩm đầu tiên để tạo (hoặc tạo product gộp tất cả)
+      const firstItem = cart.items[0];
+      const productName = cart.items.length === 1
+        ? firstItem.name
+        : `Đơn hàng ${cart.items.length} sản phẩm`;
+
+      // Gọi API /api/products/ để tạo checkout session với Direct Charge
+      const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: total,
-          currency: 'usd'
+          name: productName,
+          price: total,
+          currency: 'usd',
+          description: `Thanh toán cho ${cart.items.length} sản phẩm. Tổng: $${total.toFixed(2)} (bao gồm phí vận chuyển: $${shippingCost.toFixed(2)})`
         })
       });
 
       const data = await response.json();
-      if (data.clientSecret) {
-        setClientSecret(data.clientSecret);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
       }
+
+      console.log('✅ Checkout session tạo thành công!');
+      console.log('🔗 Checkout URL:', data.checkoutUrl);
+      console.log('📋 Session ID:', data.sessionId);
+      console.log('🏪 Connect Account:', data.connectAccountId);
+      console.log('💸 Tiền sẽ đi thẳng vào Connect Account');
+      console.log('========================================');
+
+      // Mở popup nhỏ cho Stripe checkout
+      console.log('🔓 Mở popup Stripe checkout với kích thước nhỏ');
+      const popup = window.open(
+        data.checkoutUrl,
+        'stripe-checkout',
+        'width=500,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
+      );
+
+      // Kiểm tra popup có mở được không
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        // Fallback: mở trong cùng tab nếu popup bị chặn
+        console.log('⚠️ Popup bị chặn, mở trong cùng tab');
+        window.location.href = data.checkoutUrl;
+      } else {
+        // Lắng nghe khi popup đóng
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            console.log('✅ Popup đã đóng, hiển thị thông báo thành công');
+
+            // Hiển thị thông báo thanh toán thành công
+            setIsLoading(false);
+            setCurrentStep('complete');
+
+            // Xóa cart sau khi thanh toán
+            clearCart();
+
+            console.log('🛒 Đã xóa giỏ hàng và hiển thị trang hoàn tất');
+          }
+        }, 1000);
+      }
+
     } catch (error) {
-      console.error('Error creating payment intent:', error);
-      setErrors({ payment: 'Failed to initialize payment. Please try again.' });
+      console.error('❌ Error creating checkout session:', error);
+      setErrors({ payment: 'Failed to create checkout session. Please try again.' });
     } finally {
       setIsLoading(false);
     }
-  }, [total]);
+  }, [total, cart.items, shippingCost, clearCart]);
 
-  // Create payment intent when we reach payment step
+  // TẠO CHECKOUT SESSION KHI ĐẾN BƯỚC THANH TOÁN (có tổng tiền cuối cùng)
   useEffect(() => {
-    if (currentStep === 'payment' && total > 0 && !clientSecret) {
-      createPaymentIntent();
+    // Chỉ tạo khi đến step 'payment' và đã có tổng tiền
+    if (currentStep === 'payment' && total > 0 && selectedShippingOption) {
+      console.log('🚀 Đến bước thanh toán, chuẩn bị tạo checkout session');
+      createCheckoutSession();
     }
-  }, [currentStep, total, clientSecret, createPaymentIntent]);
+  }, [currentStep, total, selectedShippingOption, createCheckoutSession]);
 
   const validateCurrentStep = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -235,59 +287,76 @@ export default function ShopifyCheckoutFlow() {
 
       case 'payment':
         return (
-          <>
-            <PaymentMethodSelector
-              selectedMethod={selectedPayment}
-              onMethodChange={setSelectedPayment}
-              showCardForm={true}
-            >
-              {selectedPayment.type === 'stripe' && (
-                <>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5b6c8a]"></div>
-                      <span className="ml-2 text-gray-600">Đang tải biểu mẫu thanh toán...</span>
-                    </div>
-                  ) : clientSecret ? (
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <PaymentForm onPayment={(paymentIntent) => {
-                        clearCart();
-                        if (paymentIntent) {
-                          console.log('PaymentIntent received:', paymentIntent);
-                          console.log('PaymentIntent amount (cents):', paymentIntent.amount);
-                          // Store payment info in sessionStorage for success page
-                          sessionStorage.setItem('payment_amount', paymentIntent.amount.toString());
-                          sessionStorage.setItem('payment_currency', paymentIntent.currency || 'usd');
-                        }
-                        window.location.href = '/success';
-                      }} />
-                    </Elements>
-                  ) : (
-                    <div className="text-center py-8 bg-gray-50 rounded-lg">
-                      <p className="text-gray-600">Đang tải các lựa chọn thanh toán...</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </PaymentMethodSelector>
+          <ShopifyCard>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Phương thức thanh toán</h2>
 
-            {/* Payment button */}
-            <div className="mt-6">
-              <ShopifyButton
-                type="submit"
-                form="payment-form"
-                disabled={!selectedShippingOption}
-                className="w-full relative"
-                size="lg"
-              >
-                <span id="payment-button-text">Thanh toán ${total.toFixed(2)}</span>
-                <div id="payment-spinner" className="hidden absolute inset-0 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  <span>Đang xử lý...</span>
+            <div className="text-center py-8">
+              {isLoading ? (
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5b6c8a] mb-4"></div>
+                  <span className="text-gray-600 mb-4">Đang mở trang thanh toán an toàn...</span>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-blue-800">Popup thanh toán đang mở, vui lòng đợi...</p>
+                  </div>
                 </div>
-              </ShopifyButton>
+              ) : (
+                <div>
+                  <div className="mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                      <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Thanh toán an toàn với Stripe</h3>
+                    <p className="text-gray-600 mb-6">
+                      Bạn sẽ được chuyển đến trang thanh toán bảo mật của Stripe để hoàn tất đơn hàng.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 text-sm text-gray-600 mb-6">
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Thanh toán được bảo vệ bởi Stripe</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Tiền sẽ vào tài khoản Connect an toàn</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Tổng tiền: ${total.toFixed(2)} (đã bao gồm phí vận chuyển)</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Button */}
+                  <div className="mt-6">
+                    <ShopifyButton
+                      onClick={() => {
+                        console.log('💳 User click thanh toán - gọi createCheckoutSession');
+                        createCheckoutSession();
+                      }}
+                      className="w-full text-lg py-3"
+                      size="lg"
+                    >
+                      💳 Thanh toán ngay - ${total.toFixed(2)}
+                    </ShopifyButton>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>💡 Mẹo:</strong> Nhấn nút trên để mở popup thanh toán nhỏ gọn
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          </>
+          </ShopifyCard>
         );
 
       case 'review':
@@ -332,10 +401,14 @@ export default function ShopifyCheckoutFlow() {
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Phương thức thanh toán</h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{selectedPayment.icon}</span>
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{selectedPayment.name}</p>
-                      <p className="text-sm text-gray-600">{selectedPayment.description}</p>
+                      <p className="text-sm font-medium text-gray-900">Thanh toán an toàn qua Stripe</p>
+                      <p className="text-sm text-gray-600">Thẻ tín dụng, debit card và các phương thức khác</p>
                     </div>
                   </div>
                 </div>
@@ -418,7 +491,7 @@ export default function ShopifyCheckoutFlow() {
             {renderStepContent()}
 
             {/* Navigation Buttons */}
-            {currentStep !== 'complete' && currentStep !== 'payment' && (
+            {currentStep !== 'complete' && (
               <div className="flex justify-between">
                 {currentStep !== 'contact' && (
                   <ShopifyButton onClick={handlePrevious} variant="outline">
@@ -437,7 +510,7 @@ export default function ShopifyCheckoutFlow() {
                     </ShopifyButton>
                   ) : (
                     <ShopifyButton onClick={handleNext}>
-                      Tiếp tục {currentStep === 'contact' ? 'giao hàng' : currentStep === 'shipping' ? 'thanh toán' : 'xác nhận'}
+                      Tiếp tục {currentStep === 'contact' ? 'giao hàng' : currentStep === 'shipping' ? 'thanh toán' : currentStep === 'payment' ? 'xác nhận' : ''}
                     </ShopifyButton>
                   )}
                 </div>
@@ -464,136 +537,5 @@ export default function ShopifyCheckoutFlow() {
         </div>
       </div>
     </div>
-  );
-}
-
-function PaymentForm({ onPayment }: { onPayment: (paymentIntent?: {
-  id: string;
-  amount: number;
-  currency: string;
-  status: string;
-}) => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const getErrorMessage = (error: { type?: string; code?: string; decline_code?: string; message?: string }): string => {
-    if (error.type === 'card_error') {
-      switch (error.code) {
-        case 'card_declined':
-          switch (error.decline_code) {
-            case 'live_mode_test_card':
-              return 'Bạn đang sử dụng thẻ test ở chế độ live. Vui lòng chuyển sang test mode hoặc sử dụng thẻ thật.';
-            case 'insufficient_funds':
-              return 'Thẻ không đủ số dư. Vui lòng sử dụng thẻ khác.';
-            case 'expired_card':
-              return 'Thẻ đã hết hạn. Vui lòng sử dụng thẻ khác.';
-            case 'incorrect_cvc':
-              return 'Mã CVC không chính xác. Vui lòng kiểm tra lại.';
-            case 'incorrect_number':
-              return 'Số thẻ không chính xác. Vui lòng kiểm tra lại.';
-            default:
-              return 'Thẻ bị từ chối. Vui lòng thử thẻ khác.';
-          }
-        case 'invalid_expiry_year':
-          return 'Năm hết hạn không hợp lệ.';
-        case 'invalid_expiry_month':
-          return 'Tháng hết hạn không hợp lệ.';
-        case 'invalid_number':
-          return 'Số thẻ không hợp lệ.';
-        case 'incomplete_number':
-          return 'Số thẻ chưa đầy đủ.';
-        case 'incomplete_expiry':
-          return 'Thời hạn hết hạn chưa đầy đủ.';
-        case 'incomplete_cvc':
-          return 'Mã CVC chưa đầy đủ.';
-        default:
-          return error.message || 'Lỗi thanh toán. Vui lòng thử lại.';
-      }
-    }
-
-    if (error.type === 'validation_error') {
-      return 'Thông tin thẻ không hợp lệ. Vui lòng kiểm tra lại.';
-    }
-
-    if (error.type === 'api_error') {
-      return 'Lỗi kết nối với cổng thanh toán. Vui lòng thử lại sau.';
-    }
-
-    return 'Đã xảy ra lỗi thanh toán. Vui lòng thử lại.';
-  };
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setErrorMessage('');
-
-    // Show loading state on button
-    const buttonText = document.getElementById('payment-button-text');
-    const spinner = document.getElementById('payment-spinner');
-    if (buttonText) buttonText.classList.add('hidden');
-    if (spinner) spinner.classList.remove('hidden');
-
-    if (!stripe || !elements) {
-      setErrorMessage('Dịch vụ thanh toán chưa sẵn sàng. Vui lòng tải lại trang.');
-      // Hide loading state
-      if (buttonText) buttonText.classList.remove('hidden');
-      if (spinner) spinner.classList.add('hidden');
-      return;
-    }
-
-    try {
-      const result = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/success`,
-        },
-      });
-
-      if (result.error) {
-        const friendlyMessage = getErrorMessage(result.error);
-        setErrorMessage(friendlyMessage);
-        console.error('Payment error:', result.error);
-        // Hide loading state on error
-        if (buttonText) buttonText.classList.remove('hidden');
-        if (spinner) spinner.classList.add('hidden');
-      } else if ('paymentIntent' in result) {
-        // Payment successful
-        const paymentIntent = result.paymentIntent as {
-          id: string;
-          amount: number;
-          currency: string;
-          status: string;
-        };
-        console.log('PaymentIntent received:', paymentIntent);
-        console.log('PaymentIntent amount (cents):', paymentIntent.amount);
-        onPayment(paymentIntent);
-      }
-    } catch (error: unknown) {
-      const friendlyMessage = getErrorMessage(error as { type?: string; code?: string; decline_code?: string; message?: string });
-      setErrorMessage(friendlyMessage);
-      console.error('Payment error:', error);
-      // Hide loading state on error
-      if (buttonText) buttonText.classList.remove('hidden');
-      if (spinner) spinner.classList.add('hidden');
-    }
-  };
-
-  return (
-    <form id="payment-form" onSubmit={handleSubmit}>
-      <PaymentElement />
-
-      {errorMessage && (
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="ml-3">
-              <p className="text-sm text-red-800">{errorMessage}</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </form>
   );
 }

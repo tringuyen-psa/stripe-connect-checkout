@@ -301,20 +301,44 @@ function SuccessPageContent() {
         </ShopifyCard>
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <ShopifyButton
-            onClick={() => window.location.href = '/'}
-            variant="outline"
-            className="flex-1"
-          >
-            Tiếp tục mua sắm
-          </ShopifyButton>
-          <ShopifyButton
-            onClick={() => window.close()}
-            className="flex-1"
-          >
-            Đóng cửa sổ
-          </ShopifyButton>
+        <div className="space-y-4">
+          <div className="flex gap-4">
+            <ShopifyButton
+              onClick={() => {
+                // Nếu là popup, đóng và mở trang chính mới
+                if (window.opener) {
+                  window.opener.location.href = '/';
+                  window.close();
+                } else {
+                  window.location.href = '/';
+                }
+              }}
+              variant="outline"
+              className="flex-1"
+            >
+              🛍️ Tiếp tục mua sắm
+            </ShopifyButton>
+            <ShopifyButton
+              onClick={() => {
+                // Nếu là popup, chỉ đóng cửa sổ
+                if (window.opener) {
+                  window.close();
+                } else {
+                  // Nếu không phải popup, về trang chính
+                  window.location.href = '/';
+                }
+              }}
+              className="flex-1"
+            >
+              🏠 Về trang chính
+            </ShopifyButton>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              💡 <strong>Mẹo:</strong> Đóng cửa sổ này để quay lại trang mua sắm
+            </p>
+          </div>
         </div>
       </div>
     </div>

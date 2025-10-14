@@ -36,45 +36,34 @@ export default function ProductInput() {
     setIsCreating(true);
 
     try {
-      // Call the real API to create product
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: typeof productName === 'string' ? productName.trim() : '',
-          price: parseFloat(productPrice),
-          currency: 'USD'
-        }),
-      });
+      // CHỈ thêm vào cart, KHÔNG gọi API ngay
+      // API sẽ được gọi ở trang checkout sau khi có tổng tiền cuối cùng
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create product');
-      }
-
-      // Add the created product to cart
-      const product = {
-        id: data.product.id,
-        name: data.product.name,
-        price: data.product.price
+      // Tạo product ID tạm thời
+      const tempProduct = {
+        id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: typeof productName === 'string' ? productName.trim() : '',
+        price: parseFloat(productPrice),
+        currency: 'USD'
       };
 
-      addToCart(product);
+      // Add product to cart
+      addToCart(tempProduct);
 
       // Reset form
       setProductName('');
       setProductPrice('');
       setErrors({});
 
+      console.log('🛒 Đã thêm sản phẩm vào cart (chưa gọi API):', tempProduct);
+      console.log('🔄 API sẽ được gọi ở trang checkout sau khi chọn shipping');
+
       // Navigate to checkout page
       window.location.href = '/checkout';
 
     } catch (error) {
-      console.error('Error creating product:', error);
-      setErrors({ submit: error instanceof Error ? error.message : 'Failed to create product' });
+      console.error('Error adding product to cart:', error);
+      setErrors({ submit: error instanceof Error ? error.message : 'Failed to add product to cart' });
     } finally {
       setIsCreating(false);
     }

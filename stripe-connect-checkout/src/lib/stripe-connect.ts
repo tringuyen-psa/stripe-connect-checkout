@@ -20,65 +20,199 @@ export async function createProductWithCheckout({
   description?: string;
 }) {
   try {
-    // Create a product in Stripe
-    const product = await stripe.products.create({
-      name,
-      description,
-      type: 'service',
-    });
+    // Direct Charge - Tạo product và price với Connect account
+    if (STRIPE_CONNECT_ACCOUNT_ID) {
+      // Tạo Connect Stripe instance để tạo product và price
+      const connectStripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-09-30.clover',
+        typescript: true,
+        stripeAccount: STRIPE_CONNECT_ACCOUNT_ID,
+      });
 
-    // Create a price for the product
-    const priceData = await stripe.prices.create({
-      product: product.id,
-      unit_amount: Math.round(price * 100), // Convert to cents
-      currency,
-    });
+      // Tạo product với Connect account
+      const connectProduct = await connectStripe.products.create({
+        name,
+        description,
+        type: 'service',
+      });
 
-    // Create a checkout session
-    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceData.id,
-          quantity: 1,
+      // Tạo price với Connect account
+      const connectPrice = await connectStripe.prices.create({
+        product: connectProduct.id,
+        unit_amount: Math.round(price * 100), // Convert to cents
+        currency,
+      });
+
+      // Tạo checkout session với Connect account
+      const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: connectPrice.id, // Dùng price của Connect account
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
+        metadata: {
+          product_id: connectProduct.id,
+          product_name: name,
         },
-      ],
-      mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
-      metadata: {
-        product_id: product.id,
-        product_name: name,
-      },
-    };
+      };
 
-    // Only add transfer_data if it's a different account
-    if (STRIPE_CONNECT_ACCOUNT_ID && STRIPE_CONNECT_ACCOUNT_ID !== 'acct_1SE01SGvqAVA71Vq') {
-      sessionConfig.payment_intent_data = {
-        transfer_data: {
-          destination: STRIPE_CONNECT_ACCOUNT_ID,
+      // Tạo session với Connect account
+      const connectSession = await connectStripe.checkout.sessions.create(sessionConfig);
+
+      // Console log chi tiết để debug
+      console.log('🎯🎯🎯 DIRECT CHARGE - CHECKOUT INFO CHI TIẾT 🎯🎯🎯');
+      console.log('🌐 Checkout API URL:', connectSession.url);
+      console.log('🔗 Full Checkout Link:', connectSession.url);
+      console.log('📋 Session ID:', connectSession.id);
+      console.log('🏪 Connect Account (hiển thị trong giao diện):', STRIPE_CONNECT_ACCOUNT_ID);
+      console.log('📦 Product ID:', connectProduct.id);
+      console.log('💰 Price ID:', connectPrice.id);
+      console.log('💵 Price amount:', Math.round(price * 100) + ' cents');
+      console.log('💱 Currency:', currency);
+      console.log('🔑 Account sẽ nhận tiền:', STRIPE_CONNECT_ACCOUNT_ID);
+      console.log('📱 Copy link trên để test thanh toán trên mobile/desktop');
+      console.log('⚡ Link format: https://checkout.stripe.com/c/pay/cs_xxx');
+      console.log('💸 Tiền đi thẳng vào Connect account - không cần transfer');
+      console.log('=========================================================');
+
+      return {
+        success: true,
+        data: {
+          sessionId: connectSession.id,
+          checkoutUrl: connectSession.url!,
+          checkoutStripeUrl: connectSession.url, // Thêm link checkout.stripe.com
+          product: {
+            id: connectProduct.id,
+            name,
+            price,
+            currency,
+            description,
+          },
+          connectAccountId: STRIPE_CONNECT_ACCOUNT_ID,
+          chargeType: 'direct' // Direct Charge
         },
       };
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    // Nếu không có Connect Account, trả về error
+    throw new Error('STRIPE_CONNECT_ACCOUNT_ID is required for Direct Charge');
+  } catch (error) {
+    console.error('Stripe error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+export async function addShippingFeeAndRecreateCheckout({
+  originalSessionId,
+  shippingFee,
+  shippingDescription = "Phí vận chuyển",
+}: {
+  originalSessionId: string;
+  shippingFee: number;
+  shippingDescription?: string;
+}) {
+  try {
+    if (!STRIPE_CONNECT_ACCOUNT_ID) {
+      throw new Error('STRIPE_CONNECT_ACCOUNT_ID is required');
+    }
+
+    // Tạo Connect Stripe instance
+    const connectStripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-09-30.clover',
+      typescript: true,
+      stripeAccount: STRIPE_CONNECT_ACCOUNT_ID,
+    });
+
+    // Lấy thông tin session cũ
+    const originalSession = await connectStripe.checkout.sessions.retrieve(originalSessionId, {
+      expand: ['line_items'],
+    });
+
+    if (!originalSession.line_items?.data) {
+      throw new Error('Cannot retrieve original session items');
+    }
+
+    // Tạo shipping fee product trong Connect account
+    const shippingProduct = await connectStripe.products.create({
+      name: shippingDescription,
+      description: `Phí vận chuyển cho đơn hàng ${originalSessionId}`,
+      type: 'service',
+    });
+
+    // Tạo price cho shipping fee
+    const shippingPrice = await connectStripe.prices.create({
+      product: shippingProduct.id,
+      unit_amount: Math.round(shippingFee * 100), // Convert to cents
+      currency: 'usd',
+    });
+
+    // Chuẩn bị line items mới (cả sản phẩm cũ + phí vận chuyển)
+    const newLineItems = [
+      ...originalSession.line_items.data.map(item => ({
+        price: item.price?.id,
+        quantity: item.quantity || 1,
+      })),
+      {
+        price: shippingPrice.id,
+        quantity: 1,
+      },
+    ];
+
+    // Tạo checkout session mới với phí vận chuyển
+    const newSessionConfig: Stripe.Checkout.SessionCreateParams = {
+      payment_method_types: ['card'],
+      line_items: newLineItems,
+      mode: 'payment',
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
+      metadata: {
+        ...originalSession.metadata,
+        original_session_id: originalSessionId,
+        shipping_fee_added: 'true',
+        shipping_fee_amount: shippingFee.toString(),
+      },
+    };
+
+    const newSession = await connectStripe.checkout.sessions.create(newSessionConfig);
+
+    // Console log chi tiết khi thêm phí vận chuyển
+    console.log('🚚🚚🚚 THÊM PHÍ VẬN CHUYỂN VÀ TẠO LẠI CHECKOUT 🚚🚚🚚');
+    console.log('📦 Original Session ID:', originalSessionId);
+    console.log('💰 Phí vận chuyển thêm:', shippingFee + ' USD');
+    console.log('📄 Shipping Product ID:', shippingProduct.id);
+    console.log('💳 Shipping Price ID:', shippingPrice.id);
+    console.log('🔗 New Checkout URL:', newSession.url);
+    console.log('📋 New Session ID:', newSession.id);
+    console.log('🏪 Connect Account:', STRIPE_CONNECT_ACCOUNT_ID);
+    console.log('📊 Tổng line items:', newLineItems.length + ' items');
+    console.log('✨ Copy link mới để thanh toán với phí vận chuyển!');
+    console.log('=========================================================');
 
     return {
       success: true,
       data: {
-        sessionId: session.id,
-        checkoutUrl: session.url!,
-        product: {
-          id: product.id,
-          name,
-          price,
-          currency,
-          description,
-        },
+        originalSessionId,
+        newSessionId: newSession.id,
+        checkoutUrl: newSession.url!,
+        checkoutStripeUrl: newSession.url,
+        shippingFee,
+        shippingProductId: shippingProduct.id,
+        connectAccountId: STRIPE_CONNECT_ACCOUNT_ID,
+        totalItems: newLineItems.length,
+        originalItems: originalSession.line_items.data.length,
+        message: 'Đã thêm phí vận chuyển và tạo lại checkout session'
       },
     };
   } catch (error) {
-    console.error('Stripe error:', error);
+    console.error('Error adding shipping fee:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
