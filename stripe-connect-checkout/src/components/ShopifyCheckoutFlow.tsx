@@ -140,7 +140,7 @@ export default function ShopifyCheckoutFlow() {
     } finally {
       setIsLoading(false);
     }
-  }, [total, cart.items, shippingCost, clearCart]);
+  }, [total, cart.items, shippingCost, clearCart, currentStep]); // Add currentStep to prevent stale closures
 
   // TẠO CHECKOUT SESSION KHI ĐẾN BƯỚC THANH TOÁN (có tổng tiền cuối cùng)
   useEffect(() => {
@@ -148,7 +148,13 @@ export default function ShopifyCheckoutFlow() {
     if (currentStep === 'payment' && total > 0 && selectedShippingOption && !hasCreatedCheckout) {
       console.log('🚀 Đến bước thanh toán, chuẩn bị tạo checkout session');
       setHasCreatedCheckout(true); // Prevent multiple calls
-      createCheckoutSession();
+
+      // Delay slightly to avoid rapid re-calls
+      const timeoutId = setTimeout(() => {
+        createCheckoutSession();
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [currentStep === 'payment', total > 0, selectedShippingOption?.id, hasCreatedCheckout]); // Remove createCheckoutSession from deps to prevent infinite loop
 
