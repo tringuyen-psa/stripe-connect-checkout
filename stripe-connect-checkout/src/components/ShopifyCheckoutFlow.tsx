@@ -70,6 +70,7 @@ export default function ShopifyCheckoutFlow() {
       console.log('🎯 TẠO CHECKOUT SESSION VỚI TỔNG TIỀN CUỐI CÙNG');
       console.log('💰 Total amount:', total.toFixed(2) + ' USD');
       console.log('📦 Số sản phẩm:', cart.items.length);
+      console.log('🚚 Shipping cost:', shippingCost.toFixed(2) + ' USD');
 
       // Lấy sản phẩm đầu tiên để tạo (hoặc tạo product gộp tất cả)
       const firstItem = cart.items[0];
@@ -77,7 +78,10 @@ export default function ShopifyCheckoutFlow() {
         ? firstItem.name
         : `Đơn hàng ${cart.items.length} sản phẩm`;
 
+      console.log('📦 Product name:', productName);
+
       // Gọi API /api/products/ để tạo checkout session với Direct Charge
+      console.log('🌐 Calling /api/products API...');
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,9 +93,12 @@ export default function ShopifyCheckoutFlow() {
         })
       });
 
+      console.log('📡 API Response status:', response.status);
       const data = await response.json();
+      console.log('📦 API Response data:', data);
 
       if (!response.ok) {
+        console.error('❌ API Error:', data.error);
         throw new Error(data.error || 'Failed to create checkout session');
       }
 
@@ -104,18 +111,25 @@ export default function ShopifyCheckoutFlow() {
 
       // Mở popup nhỏ cho Stripe checkout
       console.log('🔓 Mở popup Stripe checkout với kích thước nhỏ');
+      console.log('🌐 Popup URL:', data.checkoutUrl);
+
       const popup = window.open(
         data.checkoutUrl,
         'stripe-checkout',
         'width=500,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
       );
 
+      console.log('🔍 Popup result:', popup);
+      console.log('🔍 Popup closed:', popup?.closed);
+
       // Kiểm tra popup có mở được không
       if (!popup || popup.closed || typeof popup.closed === 'undefined') {
         // Fallback: mở trong cùng tab nếu popup bị chặn
         console.log('⚠️ Popup bị chặn, mở trong cùng tab');
+        console.log('🔄 Redirecting to:', data.checkoutUrl);
         window.location.href = data.checkoutUrl;
       } else {
+        console.log('✅ Popup opened successfully!');
         // Lắng nghe khi popup đóng
         const checkClosed = setInterval(() => {
           if (popup.closed) {
@@ -136,7 +150,7 @@ export default function ShopifyCheckoutFlow() {
 
     } catch (error) {
       console.error('❌ Error creating checkout session:', error);
-      setErrors({ payment: 'Failed to create checkout session. Please try again.' });
+      setErrors({ payment: `Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +176,15 @@ export default function ShopifyCheckoutFlow() {
     const newErrors: Record<string, string> = {};
 
     if (currentStep === 'contact') {
-      if (!contactData.email) newErrors.email = 'Email is required';
+      if (!contactData.email) {
+        newErrors.email = 'Email is required';
+      } else {
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contactData.email.trim())) {
+          newErrors.email = 'Please enter a valid email address';
+        }
+      }
       if (!contactData.firstName) newErrors.firstName = 'First name is required';
       if (!contactData.lastName) newErrors.lastName = 'Last name is required';
     }
