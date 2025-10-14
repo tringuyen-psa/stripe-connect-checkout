@@ -68,16 +68,30 @@ function SuccessPageContent() {
     if (sessionId) {
       const fetchOrderDetails = async () => {
         try {
+          console.log('🔍 Fetching order details for session:', sessionId);
           const response = await fetch(`/api/checkout?session_id=${sessionId}`);
+
+          console.log('📡 Response status:', response.status);
           const data = await response.json();
+          console.log('📦 Response data:', data);
 
           if (!response.ok) {
+            console.error('❌ API Error:', data.error);
             throw new Error(data.error || 'Failed to load order details');
           }
 
+          console.log('✅ Order details loaded successfully');
           setOrderDetails(data);
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load order details');
+          console.error('❌ Error fetching order details:', err);
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load order details';
+
+          // If session not found, show a more user-friendly message
+          if (errorMessage.includes('No such checkout.session') || errorMessage.includes('not found')) {
+            setError('This order has expired or is not found. Please start a new order.');
+          } else {
+            setError(errorMessage);
+          }
         } finally {
           setLoading(false);
         }
@@ -87,8 +101,21 @@ function SuccessPageContent() {
       return;
     }
 
-    // No valid parameters found
-    setError('Session ID or Payment Intent is required');
+    // No valid parameters found - show basic success message
+    console.log('⚠️ No session_id or payment_intent found, showing basic success');
+    setOrderDetails({
+      id: 'unknown',
+      payment_status: 'succeeded',
+      amount_total: 0,
+      line_items: {
+        data: [
+          {
+            description: 'Payment completed successfully',
+            amount_total: 0,
+          }
+        ]
+      }
+    });
     setLoading(false);
   }, [sessionId, paymentIntentId, redirectStatus]);
 
@@ -126,12 +153,21 @@ function SuccessPageContent() {
               </div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Error</h2>
               <p className="text-gray-600 mb-4">{error}</p>
-              <ShopifyButton
-                onClick={() => window.close()}
-                className="w-full"
-              >
-                Close Window
-              </ShopifyButton>
+              <div className="space-y-2">
+                <ShopifyButton
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                  className="w-full"
+                >
+                  🔄 Try Again
+                </ShopifyButton>
+                <ShopifyButton
+                  onClick={() => window.close()}
+                  className="w-full"
+                >
+                  Close Window
+                </ShopifyButton>
+              </div>
             </div>
           </ShopifyCard>
         </div>
@@ -146,8 +182,10 @@ function SuccessPageContent() {
   const amount = orderDetails?.amount_total ? orderDetails.amount_total / 100 : (lineItem?.amount_total || 0) / 100;
   const orderId = orderDetails?.payment_intent || orderDetails?.id || sessionId || 'Unknown';
 
-  console.log('Order details ID:', orderDetails?.id);
-  console.log('Final amount to display:', amount);
+  console.log('📋 Final order details:');
+  console.log('- Product Name:', productName);
+  console.log('- Amount:', amount);
+  console.log('- Order ID:', orderId);
 
   return (
     <div className="min-h-screen bg-gray-50">

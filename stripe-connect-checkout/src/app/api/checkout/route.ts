@@ -56,8 +56,21 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('❌ Checkout API Error:', error);
+    console.error('❌ Session ID that failed:', sessionId);
+
+    let errorMessage = 'Internal server error';
+    if (error instanceof Error) {
+      if (error.message.includes('No such checkout.session')) {
+        errorMessage = 'Order session not found. This order may have expired.';
+      } else if (error.message.includes('Invalid API Key')) {
+        errorMessage = 'Configuration error. Please contact support.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
