@@ -40,6 +40,7 @@ export default function ShopifyCheckoutFlow() {
   });
 
     const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
+  const [hasCreatedCheckout, setHasCreatedCheckout] = useState(false);
 
   // Calculate order totals
   const subtotal = cart.subtotal;
@@ -61,7 +62,7 @@ export default function ShopifyCheckoutFlow() {
       };
       setSelectedShippingOption(standardShipping);
     }
-  }, [shippingData.shippingMethod, selectedShippingOption]);
+  }, [shippingData.shippingMethod]); // Remove selectedShippingOption from deps to prevent infinite loop
 
   const createCheckoutSession = useCallback(async () => {
     setIsLoading(true);
@@ -143,12 +144,13 @@ export default function ShopifyCheckoutFlow() {
 
   // TẠO CHECKOUT SESSION KHI ĐẾN BƯỚC THANH TOÁN (có tổng tiền cuối cùng)
   useEffect(() => {
-    // Chỉ tạo khi đến step 'payment' và đã có tổng tiền
-    if (currentStep === 'payment' && total > 0 && selectedShippingOption) {
+    // Chỉ tạo khi đến step 'payment' và đã có tổng tiền, và chưa tạo checkout trước đó
+    if (currentStep === 'payment' && total > 0 && selectedShippingOption && !hasCreatedCheckout) {
       console.log('🚀 Đến bước thanh toán, chuẩn bị tạo checkout session');
+      setHasCreatedCheckout(true); // Prevent multiple calls
       createCheckoutSession();
     }
-  }, [currentStep, total, selectedShippingOption, createCheckoutSession]);
+  }, [currentStep === 'payment', total > 0, selectedShippingOption?.id, hasCreatedCheckout]); // Remove createCheckoutSession from deps to prevent infinite loop
 
   const validateCurrentStep = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -185,6 +187,10 @@ export default function ShopifyCheckoutFlow() {
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
+      // Reset checkout flag when going back from payment step
+      if (currentStep === 'payment') {
+        setHasCreatedCheckout(false);
+      }
     }
   };
 
