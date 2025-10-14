@@ -64,7 +64,7 @@ export default function SubscriptionCheckoutFlow() {
       const standardShipping: ShippingOption = {
         id: 'standard',
         name: 'Standard Shipping',
-        price: 1.00,
+        price: 0.1,
         estimatedDays: '5-7',
         description: 'Standard delivery',
         type: 'standard'
@@ -439,7 +439,7 @@ export default function SubscriptionCheckoutFlow() {
                       {
                         id: 'standard',
                         name: 'Standard Shipping',
-                        price: 1.00,
+                        price: 0.1,
                         estimatedDays: '5-7',
                         description: 'Standard delivery',
                         type: 'standard'
@@ -447,7 +447,7 @@ export default function SubscriptionCheckoutFlow() {
                       {
                         id: 'express',
                         name: 'Express Shipping',
-                        price: 12.99,
+                        price: 1.00,
                         estimatedDays: '2-3',
                         description: 'Express delivery',
                         type: 'express'
