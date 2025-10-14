@@ -146,7 +146,7 @@ function SuccessPageContent() {
   const amount = orderDetails?.amount_total ? orderDetails.amount_total / 100 : (lineItem?.amount_total || 0) / 100;
   const orderId = orderDetails?.payment_intent || orderDetails?.id || sessionId || 'Unknown';
 
-  console.log('Order details:', orderDetails);
+  console.log('Order details ID:', orderDetails?.id);
   console.log('Final amount to display:', amount);
 
   return (
