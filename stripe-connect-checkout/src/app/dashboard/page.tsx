@@ -72,7 +72,13 @@ export default function DashboardPage() {
                   variant="outline"
                   onClick={() => window.location.href = '/subscription-checkout'}
                 >
-                  💳 View Active Subscriptions
+                  💳 Create Subscription
+                </ShopifyButton>
+                <ShopifyButton
+                  variant="outline"
+                  onClick={() => window.location.href = '/subscriptions'}
+                >
+                  📊 Manage Subscriptions
                 </ShopifyButton>
               </div>
             </div>
