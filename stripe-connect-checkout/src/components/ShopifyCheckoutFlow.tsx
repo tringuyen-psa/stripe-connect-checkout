@@ -140,7 +140,7 @@ export default function ShopifyCheckoutFlow() {
     } finally {
       setIsLoading(false);
     }
-  }, [total, cart.items, shippingCost, clearCart, currentStep]); // Add currentStep to prevent stale closures
+  }, [total, cart.items, shippingCost, clearCart]); // Remove currentStep to prevent re-creation on step change
 
   // TẠO CHECKOUT SESSION KHI ĐẾN BƯỚC THANH TOÁN (có tổng tiền cuối cùng)
   useEffect(() => {

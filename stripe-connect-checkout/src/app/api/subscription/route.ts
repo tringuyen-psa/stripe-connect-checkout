@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ Subscription tạo thành công cho Connected Account');
       console.log('📋 Subscription ID:', subscription.id);
-      console.log('🔗 Client Secret:', (subscription.latest_invoice as any)?.payment_intent?.client_secret);
+      const latestInvoice = subscription.latest_invoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent };
+      console.log('🔗 Client Secret:', latestInvoice.payment_intent?.client_secret);
       console.log('💸 Tiền subscription sẽ đi vào:', STRIPE_CONNECT_ACCOUNT_ID);
       console.log('=====================================');
 
@@ -82,9 +83,11 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Transfer đến:', STRIPE_CONNECT_ACCOUNT_ID);
     }
 
+    const invoiceWithPayment = subscription.latest_invoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent };
+
     return NextResponse.json({
       subscriptionId: subscription.id,
-      clientSecret: (subscription.latest_invoice as any)?.payment_intent?.client_secret,
+      clientSecret: invoiceWithPayment.payment_intent?.client_secret,
       customerId: subscription.customer,
       status: subscription.status,
       connectedAccountId: useConnectedAccount ? STRIPE_CONNECT_ACCOUNT_ID : null,
@@ -124,23 +127,18 @@ export async function GET(request: NextRequest) {
 
       const subscription = await connectedStripe.subscriptions.retrieve(subscriptionId, {
         expand: ['customer', 'latest_invoice', 'items.data.price'],
-      });
+      }) as Stripe.Subscription;
 
       console.log('✅ Successfully retrieved subscription from Connect account');
-      console.log('📋 Subscription data:', {
-        id: subscription.id,
-        status: subscription.status,
-        customer: subscription.customer,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-      });
+      console.log('📋 Subscription ID:', subscription.id);
+      console.log('📋 Subscription Status:', subscription.status);
 
       return NextResponse.json(subscription);
     } else {
       // Fallback: dùng stripe instance chính
       const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
         expand: ['customer', 'latest_invoice', 'items.data.price'],
-      });
+      }) as Stripe.Subscription;
 
       return NextResponse.json(subscription);
     }

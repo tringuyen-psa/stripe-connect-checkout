@@ -82,7 +82,7 @@ function SubscriptionPaymentContent() {
   const options = {
     clientSecret: clientSecret!,
     appearance: {
-      theme: 'stripe',
+      theme: 'stripe' as const,
       variables: {
         colorPrimary: '#5b6c8a',
       },

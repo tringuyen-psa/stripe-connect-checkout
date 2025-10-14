@@ -30,7 +30,6 @@ export default function SubscriptionCheckoutFlow() {
   // Subscription settings
   const [subscriptionInterval, setSubscriptionInterval] = useState<SubscriptionInterval>('month');
   const [subscriptionIntervalCount, setSubscriptionIntervalCount] = useState(1);
-  const [isSubscription, setIsSubscription] = useState(true); // Default to subscription
 
   // Form data
   const [contactData, setContactData] = useState<ContactFormData>({
