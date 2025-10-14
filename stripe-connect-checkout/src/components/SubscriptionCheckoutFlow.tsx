@@ -238,7 +238,15 @@ export default function SubscriptionCheckoutFlow() {
     const newErrors: Record<string, string> = {};
 
     if (currentStep === 'contact') {
-      if (!contactData.email) newErrors.email = 'Email is required';
+      if (!contactData.email) {
+        newErrors.email = 'Email is required';
+      } else {
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contactData.email.trim())) {
+          newErrors.email = 'Please enter a valid email address';
+        }
+      }
       if (!contactData.firstName) newErrors.firstName = 'First name is required';
       if (!contactData.lastName) newErrors.lastName = 'Last name is required';
     }

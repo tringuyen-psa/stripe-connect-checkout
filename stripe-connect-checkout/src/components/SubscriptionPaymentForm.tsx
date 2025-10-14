@@ -15,6 +15,19 @@ export default function SubscriptionPaymentForm({ subscriptionId }: Subscription
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string>('');
   const [isComplete, setIsComplete] = useState(false);
+  const [stripeLoadingError, setStripeLoadingError] = useState(false);
+
+  useEffect(() => {
+    // Check if Stripe is loading
+    const timer = setTimeout(() => {
+      if (!stripe) {
+        setStripeLoadingError(true);
+        setMessage('Stripe is loading. Please refresh the page and try again.');
+      }
+    }, 5000); // 5 seconds timeout
+
+    return () => clearTimeout(timer);
+  }, [stripe]);
 
   useEffect(() => {
     if (!stripe) return;
@@ -25,6 +38,7 @@ export default function SubscriptionPaymentForm({ subscriptionId }: Subscription
     );
 
     if (!clientSecret) {
+      setMessage('Missing payment information. Please start over.');
       return;
     }
 
@@ -101,12 +115,32 @@ export default function SubscriptionPaymentForm({ subscriptionId }: Subscription
     );
   }
 
+  // Show loading state while Stripe is initializing
+  if (!stripe && !stripeLoadingError) {
+    return (
+      <ShopifyCard>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5b6c8a] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading payment form...</p>
+        </div>
+      </ShopifyCard>
+    );
+  }
+
   return (
     <ShopifyCard>
       <form id="payment-form" onSubmit={handleSubmit}>
         <div className="mb-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Information</h3>
-          <PaymentElement options={paymentElementOptions} />
+          {stripe ? (
+            <PaymentElement options={paymentElementOptions} />
+          ) : (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800">
+                Failed to load payment form. Please refresh the page and try again.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Security badges */}

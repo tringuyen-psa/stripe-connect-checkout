@@ -19,6 +19,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address' },
+        { status: 400 }
+      );
+    }
+
     let customer: Stripe.Customer;
 
     if (useConnectedAccount && STRIPE_CONNECT_ACCOUNT_ID) {
