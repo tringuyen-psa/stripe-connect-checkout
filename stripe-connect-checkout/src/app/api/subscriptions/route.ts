@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Found ${subscriptions.length} subscriptions`);
 
-    // Format subscription data with type assertions
+    // Format subscription data with proper type definitions
     const formattedSubscriptions = subscriptions.map(sub => {
       const subscriptionData = (sub as unknown) as {
         id: string;
@@ -81,10 +81,10 @@ export async function GET(request: NextRequest) {
         current_period_end: number;
         cancel_at_period_end: boolean;
         created: number;
-        customer: any;
-        items: any;
-        latest_invoice: any;
-        metadata: any;
+        customer: Stripe.Customer | Stripe.DeletedCustomer | string;
+        items: { data: Array<Stripe.SubscriptionItem> };
+        latest_invoice: Stripe.Invoice | string;
+        metadata: Record<string, string>;
       };
 
       return {
@@ -97,11 +97,11 @@ export async function GET(request: NextRequest) {
 
       customer: subscriptionData.customer ? {
         id: typeof subscriptionData.customer === 'string' ? subscriptionData.customer : subscriptionData.customer.id,
-        email: typeof subscriptionData.customer === 'object' && subscriptionData.customer.email ? subscriptionData.customer.email : 'N/A',
-        name: typeof subscriptionData.customer === 'object' && subscriptionData.customer.name ? subscriptionData.customer.name : 'N/A',
+        email: typeof subscriptionData.customer === 'object' && 'email' in subscriptionData.customer && subscriptionData.customer.email ? subscriptionData.customer.email : 'N/A',
+        name: typeof subscriptionData.customer === 'object' && 'name' in subscriptionData.customer && subscriptionData.customer.name ? subscriptionData.customer.name : 'N/A',
       } : null,
 
-      items: subscriptionData.items.data.map((item: any) => ({
+      items: subscriptionData.items.data.map((item: Stripe.SubscriptionItem) => ({
         id: item.id,
         quantity: item.quantity,
         price: item.price ? {
@@ -117,14 +117,14 @@ export async function GET(request: NextRequest) {
       })),
 
       latest_invoice: subscriptionData.latest_invoice ? {
-        id: subscriptionData.latest_invoice.id,
-        status: subscriptionData.latest_invoice.status,
-        total: subscriptionData.latest_invoice.total,
-        currency: subscriptionData.latest_invoice.currency,
-        hosted_invoice_url: (subscriptionData.latest_invoice as Stripe.Invoice).hosted_invoice_url,
+        id: typeof subscriptionData.latest_invoice === 'string' ? subscriptionData.latest_invoice : subscriptionData.latest_invoice.id,
+        status: typeof subscriptionData.latest_invoice === 'string' ? 'unknown' : subscriptionData.latest_invoice.status,
+        total: typeof subscriptionData.latest_invoice === 'string' ? 0 : subscriptionData.latest_invoice.total,
+        currency: typeof subscriptionData.latest_invoice === 'string' ? 'usd' : subscriptionData.latest_invoice.currency,
+        hosted_invoice_url: typeof subscriptionData.latest_invoice === 'string' ? null : (subscriptionData.latest_invoice as Stripe.Invoice).hosted_invoice_url,
       } : null,
 
-      amount: subscriptionData.items.data.reduce((total: number, item: any) => {
+      amount: subscriptionData.items.data.reduce((total: number, item: Stripe.SubscriptionItem) => {
         return total + (item.price?.unit_amount || 0) * (item.quantity || 1);
       }, 0),
 

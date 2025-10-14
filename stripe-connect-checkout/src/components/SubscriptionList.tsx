@@ -28,7 +28,7 @@ interface SubscriptionItem {
         interval: string;
         interval_count: number;
       } | null;
-      product: string | Stripe.Product;
+      product: string;
     } | null;
   }>;
   latest_invoice: {
@@ -332,7 +332,7 @@ export default function SubscriptionList({ email, customerId, showAll = false }:
                     </div>
                     {subscription.latest_invoice.hosted_invoice_url && (
                       <ShopifyButton
-                        onClick={() => window.open(subscription.latest_invoice!.hosted_invoice_url, '_blank')}
+                        onClick={() => subscription.latest_invoice?.hosted_invoice_url && window.open(subscription.latest_invoice.hosted_invoice_url, '_blank')}
                         variant="outline"
                         size="sm"
                       >
@@ -379,7 +379,7 @@ export default function SubscriptionList({ email, customerId, showAll = false }:
 
                 {subscription.latest_invoice?.hosted_invoice_url && (
                   <ShopifyButton
-                    onClick={() => window.open(subscription.latest_invoice!.hosted_invoice_url!, '_blank')}
+                    onClick={() => subscription.latest_invoice?.hosted_invoice_url && window.open(subscription.latest_invoice.hosted_invoice_url, '_blank')}
                     variant="outline"
                     size="sm"
                   >
