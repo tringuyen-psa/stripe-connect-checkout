@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, STRIPE_CONNECT_ACCOUNT_ID } from '@/lib/stripe-connect';
+import { STRIPE_CONNECT_ACCOUNT_ID } from '@/lib/stripe-connect';
 import Stripe from 'stripe';
 
 export async function GET(request: NextRequest) {
@@ -72,22 +72,36 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Found ${subscriptions.length} subscriptions`);
 
-    // Format subscription data
-    const formattedSubscriptions = subscriptions.map(sub => ({
-      id: sub.id,
-      status: sub.status,
-      current_period_start: sub.current_period_start,
-      current_period_end: sub.current_period_end,
-      cancel_at_period_end: sub.cancel_at_period_end,
-      created: sub.created,
+    // Format subscription data with type assertions
+    const formattedSubscriptions = subscriptions.map(sub => {
+      const subscriptionData = (sub as unknown) as {
+        id: string;
+        status: string;
+        current_period_start: number;
+        current_period_end: number;
+        cancel_at_period_end: boolean;
+        created: number;
+        customer: any;
+        items: any;
+        latest_invoice: any;
+        metadata: any;
+      };
 
-      customer: sub.customer ? {
-        id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
-        email: typeof sub.customer === 'object' && sub.customer.email ? sub.customer.email : 'N/A',
-        name: typeof sub.customer === 'object' && sub.customer.name ? sub.customer.name : 'N/A',
+      return {
+        id: subscriptionData.id,
+        status: subscriptionData.status,
+        current_period_start: subscriptionData.current_period_start,
+        current_period_end: subscriptionData.current_period_end,
+        cancel_at_period_end: subscriptionData.cancel_at_period_end,
+        created: subscriptionData.created,
+
+      customer: subscriptionData.customer ? {
+        id: typeof subscriptionData.customer === 'string' ? subscriptionData.customer : subscriptionData.customer.id,
+        email: typeof subscriptionData.customer === 'object' && subscriptionData.customer.email ? subscriptionData.customer.email : 'N/A',
+        name: typeof subscriptionData.customer === 'object' && subscriptionData.customer.name ? subscriptionData.customer.name : 'N/A',
       } : null,
 
-      items: sub.items.data.map(item => ({
+      items: subscriptionData.items.data.map((item: any) => ({
         id: item.id,
         quantity: item.quantity,
         price: item.price ? {
@@ -102,20 +116,21 @@ export async function GET(request: NextRequest) {
         } : null,
       })),
 
-      latest_invoice: sub.latest_invoice ? {
-        id: sub.latest_invoice.id,
-        status: sub.latest_invoice.status,
-        total: sub.latest_invoice.total,
-        currency: sub.latest_invoice.currency,
-        hosted_invoice_url: (sub.latest_invoice as Stripe.Invoice).hosted_invoice_url,
+      latest_invoice: subscriptionData.latest_invoice ? {
+        id: subscriptionData.latest_invoice.id,
+        status: subscriptionData.latest_invoice.status,
+        total: subscriptionData.latest_invoice.total,
+        currency: subscriptionData.latest_invoice.currency,
+        hosted_invoice_url: (subscriptionData.latest_invoice as Stripe.Invoice).hosted_invoice_url,
       } : null,
 
-      amount: sub.items.data.reduce((total, item) => {
+      amount: subscriptionData.items.data.reduce((total: number, item: any) => {
         return total + (item.price?.unit_amount || 0) * (item.quantity || 1);
       }, 0),
 
-      metadata: sub.metadata,
-    }));
+      metadata: subscriptionData.metadata,
+      };
+    });
 
     // Sort by creation date (newest first)
     formattedSubscriptions.sort((a, b) => b.created - a.created);

@@ -4,17 +4,17 @@ import { STRIPE_CONNECT_ACCOUNT_ID } from '@/lib/stripe-connect';
 import Stripe from 'stripe';
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const sessionId = searchParams.get('session_id');
+
+  if (!sessionId) {
+    return NextResponse.json(
+      { error: 'Session ID is required' },
+      { status: 400 }
+    );
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get('session_id');
-
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID is required' },
-        { status: 400 }
-      );
-    }
-
     console.log('🔍 Retrieving checkout session:', sessionId);
     console.log('🏪 Using Connect Account:', STRIPE_CONNECT_ACCOUNT_ID);
 

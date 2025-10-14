@@ -232,7 +232,7 @@ export default function SubscriptionCheckoutFlow() {
       setHasCreatedSubscription(true);
       createSubscription();
     }
-  }, [currentStep === 'payment', total > 0, selectedShippingOption?.id, hasCreatedSubscription]);
+  }, [currentStep, total, selectedShippingOption?.id, hasCreatedSubscription, createSubscription]);
 
   const validateCurrentStep = (): boolean => {
     const newErrors: Record<string, string> = {};

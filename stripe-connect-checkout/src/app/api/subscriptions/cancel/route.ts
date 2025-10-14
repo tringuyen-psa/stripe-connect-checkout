@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, STRIPE_CONNECT_ACCOUNT_ID } from '@/lib/stripe-connect';
+import { STRIPE_CONNECT_ACCOUNT_ID } from '@/lib/stripe-connect';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -37,21 +37,12 @@ export async function POST(request: NextRequest) {
     if (immediate) {
       // Cancel immediately
       console.log('🚨 Canceling subscription immediately');
-      updatedSubscription = await connectedStripe.subscriptions.cancel(subscriptionId, {
-        cancellation_details: {
-          reason: 'requested_by_customer',
-          comment: reason || 'Customer requested cancellation',
-        },
-      });
+      updatedSubscription = await connectedStripe.subscriptions.cancel(subscriptionId);
     } else {
       // Cancel at period end
       console.log('⏰ Canceling subscription at period end');
       updatedSubscription = await connectedStripe.subscriptions.update(subscriptionId, {
         cancel_at_period_end: true,
-        cancellation_details: {
-          reason: 'requested_by_customer',
-          comment: reason || 'Customer requested cancellation',
-        },
         metadata: {
           cancellation_reason: reason || 'Customer requested cancellation',
           cancelled_at: new Date().toISOString(),
@@ -63,17 +54,20 @@ export async function POST(request: NextRequest) {
     console.log('📋 Updated Status:', updatedSubscription.status);
     console.log('⏰ Cancel at period end:', updatedSubscription.cancel_at_period_end);
 
-    return NextResponse.json({
-      success: true,
-      subscription: {
-        id: updatedSubscription.id,
-        status: updatedSubscription.status,
-        cancel_at_period_end: updatedSubscription.cancel_at_period_end,
-        current_period_end: updatedSubscription.current_period_end,
-        canceled_at: updatedSubscription.canceled_at,
-        ended_at: updatedSubscription.ended_at,
-      },
-    });
+    // Extract subscription data safely with type assertion
+  const subscriptionData = (updatedSubscription as unknown) as {
+    id: string;
+    status: string;
+    cancel_at_period_end: boolean;
+    current_period_end: number;
+    canceled_at: number | null;
+    ended_at: number | null;
+  };
+
+  return NextResponse.json({
+    success: true,
+    subscription: subscriptionData,
+  });
 
   } catch (error) {
     console.error('❌ Error canceling subscription:', error);

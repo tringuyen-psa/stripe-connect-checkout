@@ -1,24 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import ShopifyCard from '@/components/ShopifyCard';
 import ShopifyButton from '@/components/ShopifyButton';
-
-interface Subscription {
-  id: string;
-  status: string;
-  current_period_end: number;
-  plan?: {
-    amount: number;
-    currency: string;
-    interval: string;
-    interval_count: number;
-  };
-  customer?: {
-    email: string;
-    name: string;
-  };
-}
 
 export default function DashboardPage() {
 

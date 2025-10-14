@@ -170,7 +170,7 @@ export default function ShopifyCheckoutFlow() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [currentStep === 'payment', total > 0, selectedShippingOption?.id, hasCreatedCheckout]); // Remove createCheckoutSession from deps to prevent infinite loop
+  }, [currentStep, total, selectedShippingOption?.id, hasCreatedCheckout, createCheckoutSession]); // Include all dependencies
 
   const validateCurrentStep = (): boolean => {
     const newErrors: Record<string, string> = {};
