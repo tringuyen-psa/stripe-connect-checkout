@@ -1,13 +1,13 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   });
 
@@ -17,16 +17,19 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
-    }),
+    })
   );
 
   // No global prefix - routes start from root
 
   const port = process.env.PORT || 3001;
 
-  console.log('🚀 Starting Stripe Payment API...');
-  console.log('🔧 Environment:', process.env.NODE_ENV || 'development');
-  console.log('🌐 CORS enabled for:', process.env.FRONTEND_URL || 'http://localhost:3000');
+  console.log("🚀 Starting Stripe Payment API...");
+  console.log("🔧 Environment:", process.env.NODE_ENV || "development");
+  console.log(
+    "🌐 CORS enabled for:",
+    process.env.FRONTEND_URL || "http://localhost:3000"
+  );
 
   await app.listen(port);
 
