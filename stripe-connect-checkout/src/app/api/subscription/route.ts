@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           payment_intent_status: latestInvoice.payment_intent?.status,
         });
 
-        clientSecret = latestInvoice.payment_intent?.client_secret;
+        clientSecret = latestInvoice.payment_intent?.client_secret || undefined;
         console.log(
           "🔑 Connect Account Client Secret:",
           clientSecret ? "✅ Found" : "❌ Not found"
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
               invoice_id: latestInvoice.id,
             },
           });
-          clientSecret = paymentIntent.client_secret;
+          clientSecret = paymentIntent.client_secret || undefined;
           console.log(
             "🔑 Manual Payment Intent Client Secret:",
             clientSecret ? "✅ Created" : "❌ Failed"
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
             subscription_id: subscription.id,
           },
         });
-        clientSecret = paymentIntent.client_secret;
+        clientSecret = paymentIntent.client_secret || undefined;
         console.log(
           "🔑 Fallback Payment Intent Client Secret:",
           clientSecret ? "✅ Created" : "❌ Failed"
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
         subscription.latest_invoice as Stripe.Invoice & {
           payment_intent?: Stripe.PaymentIntent;
         };
-      clientSecret = invoiceWithPayment.payment_intent?.client_secret;
+      clientSecret = invoiceWithPayment.payment_intent?.client_secret || undefined;
       console.log(
         "🔑 Regular Account Client Secret:",
         clientSecret ? "✅ Found" : "❌ Not found"

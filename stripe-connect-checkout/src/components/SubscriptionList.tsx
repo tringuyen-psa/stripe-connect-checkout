@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ShopifyCard from './ShopifyCard';
 import ShopifyButton from './ShopifyButton';
 
@@ -47,17 +47,13 @@ interface SubscriptionListProps {
   showAll?: boolean;
 }
 
-export default function SubscriptionList({ email, customerId, showAll = false }: SubscriptionListProps) {
+export default function SubscriptionList({ email, showAll = false }: SubscriptionListProps) {
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSubscriptions();
-  }, [email, customerId, showAll]);
-
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -89,7 +85,24 @@ export default function SubscriptionList({ email, customerId, showAll = false }:
       console.log('✅ Subscriptions fetched:', data.subscriptions?.length || 0);
 
       // Transform backend data to match frontend interface
-      const transformedSubscriptions = (data.subscriptions || []).map((sub: any) => ({
+      const transformedSubscriptions = (data.subscriptions || []).map((sub: {
+        stripe_subscription_id: string;
+        status: string;
+        current_period_start: string;
+        current_period_end: string;
+        cancel_at_period_end: boolean;
+        created_at: string;
+        amount: number;
+        currency: string;
+        stripe_customer_id: string;
+        interval: string;
+        metadata?: Record<string, string>;
+        plan?: {
+          stripe_price_id: string;
+          name: string;
+        };
+        id: string;
+      }) => ({
         id: sub.stripe_subscription_id,
         status: sub.status,
         current_period_start: Math.floor(new Date(sub.current_period_start).getTime() / 1000),
@@ -127,7 +140,11 @@ export default function SubscriptionList({ email, customerId, showAll = false }:
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, showAll]);
+
+  useEffect(() => {
+    fetchSubscriptions();
+  }, [fetchSubscriptions]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
