@@ -13,8 +13,7 @@ async function bootstrap() {
       credentials: true,
     });
 
-    // Set global prefix
-    app.setGlobalPrefix('api');
+    // No global prefix - routes start from root
 
     await app.init();
   }

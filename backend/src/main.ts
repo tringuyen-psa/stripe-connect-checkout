@@ -20,8 +20,7 @@ async function bootstrap() {
     }),
   );
 
-  // Set global prefix for API
-  app.setGlobalPrefix('api');
+  // No global prefix - routes start from root
 
   const port = process.env.PORT || 3001;
 

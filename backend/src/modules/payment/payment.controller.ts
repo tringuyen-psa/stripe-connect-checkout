@@ -1,8 +1,8 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
-@Controller('payment')
+@Controller()
 export class PaymentController {
   private stripe: Stripe;
 
@@ -12,7 +12,16 @@ export class PaymentController {
     });
   }
 
-  @Post('create-checkout-session')
+  @Get()
+  getHealth() {
+    return {
+      success: true,
+      message: 'Stripe Payment API is running!',
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  @Post('payment/create-checkout-session')
   async createCheckoutSession(@Body() body: { items: any[]; customerEmail?: string }) {
     try {
       const { items, customerEmail } = body;
