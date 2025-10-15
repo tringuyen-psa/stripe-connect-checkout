@@ -2,18 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/main.ts",
+      "src": "api/index.js",
       "use": "@vercel/node",
       "config": {
-        "maxDuration": 30,
-        "buildCommand": "npm run build"
+        "maxDuration": 30
       }
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "src/main.ts"
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
     }
   ]
 }
