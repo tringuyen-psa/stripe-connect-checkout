@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import Stripe from 'stripe';
 
+@ApiTags('payment')
 @Controller()
 export class PaymentController {
   private stripe: Stripe;
@@ -13,6 +15,8 @@ export class PaymentController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Health check' })
+  @ApiResponse({ status: 200, description: 'API is running successfully' })
   getHealth() {
     return {
       success: true,
@@ -22,6 +26,31 @@ export class PaymentController {
   }
 
   @Post('payment/create-checkout-session')
+  @ApiOperation({ summary: 'Create Stripe checkout session' })
+  @ApiResponse({ status: 201, description: 'Checkout session created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              price: { type: 'number' },
+              quantity: { type: 'number' },
+              description: { type: 'string' }
+            }
+          }
+        },
+        customerEmail: { type: 'string' }
+      },
+      required: ['items']
+    }
+  })
   async createCheckoutSession(@Body() body: { items: any[]; customerEmail?: string }) {
     try {
       const { items, customerEmail } = body;
@@ -67,7 +96,10 @@ export class PaymentController {
     }
   }
 
-  @Post('webhook')
+  @Post('payment/webhook')
+  @ApiOperation({ summary: 'Stripe webhook handler' })
+  @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid webhook signature' })
   async webhook(@Body() body: any, headers: any) {
     const sig = headers['stripe-signature'];
     const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
