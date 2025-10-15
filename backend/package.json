@@ -35,7 +35,7 @@
     "swagger-ui-express": "^5.0.0"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
