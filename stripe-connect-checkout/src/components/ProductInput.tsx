@@ -9,7 +9,6 @@ import ShopifyButton from './ShopifyButton';
 export default function ProductInput() {
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
-  const [isSubscription, setIsSubscription] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; price?: string; submit?: string }>({});
   const { addToCart } = useCart();
@@ -37,36 +36,26 @@ export default function ProductInput() {
     setIsCreating(true);
 
     try {
-      // CHỈ thêm vào cart, KHÔNG gọi API ngay
-      // API sẽ được gọi ở trang checkout sau khi có tổng tiền cuối cùng
-
-      // Tạo product ID tạm thời
-      const tempProduct = {
+      // Create simple product
+      const product = {
         id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: typeof productName === 'string' ? productName.trim() : '',
         price: parseFloat(productPrice),
-        currency: 'USD',
-        isSubscription: isSubscription
+        currency: 'USD'
       };
 
       // Add product to cart
-      addToCart(tempProduct);
+      addToCart(product);
 
       // Reset form
       setProductName('');
       setProductPrice('');
-      setIsSubscription(false);
       setErrors({});
 
-      console.log('🛒 Đã thêm sản phẩm vào cart (chưa gọi API):', tempProduct);
-      console.log(`🔄 ${isSubscription ? 'Subscription' : 'One-time payment'} - API sẽ được gọi ở trang checkout sau khi chọn shipping`);
+      console.log('🛒 Product added to cart:', product);
 
-      // Navigate to appropriate checkout page
-      if (isSubscription) {
-        window.location.href = '/subscription-checkout';
-      } else {
-        window.location.href = '/checkout';
-      }
+      // Navigate to checkout
+      window.location.href = '/checkout';
 
     } catch (error) {
       console.error('Error adding product to cart:', error);
@@ -82,9 +71,9 @@ export default function ProductInput() {
         {/* Product Input Section */}
         <div>
           <ShopifyCard>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Product</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Add Product</h2>
             <p className="text-gray-600 mb-6">
-              Add a product to your store and start selling immediately.
+              Create a product for your Shopify store and start selling.
             </p>
 
             <div className="space-y-4">
@@ -109,48 +98,13 @@ export default function ProductInput() {
                 required
               />
 
-              {/* Subscription Toggle */}
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium text-gray-900">
-                      Enable Recurring Billing
-                    </label>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Charge customers automatically on a schedule
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsSubscription(!isSubscription)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      isSubscription ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        isSubscription ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {isSubscription && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>💳 Subscription Mode:</strong> Customers will be charged automatically every month until they cancel.
-                    </p>
-                  </div>
-                )}
-              </div>
-
               <ShopifyButton
                 onClick={handleCreateProduct}
                 disabled={isCreating || !productName || typeof productName !== 'string' || !productName.trim() || !productPrice || typeof productPrice !== 'string' || !productPrice.trim()}
                 className="w-full"
                 size="lg"
               >
-                {isCreating ? 'Creating...' : (isSubscription ? 'Create Subscription' : 'Create Product')}
+                {isCreating ? 'Creating...' : 'Add to Cart'}
               </ShopifyButton>
 
               {errors.submit && (
@@ -172,8 +126,8 @@ export default function ProductInput() {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Instant Setup</h3>
-                <p className="text-sm text-gray-600">Products are ready to sell immediately</p>
+                <h3 className="text-sm font-medium text-gray-900">Simple Setup</h3>
+                <p className="text-sm text-gray-600">Add products in seconds</p>
               </div>
             </div>
 
@@ -187,7 +141,7 @@ export default function ProductInput() {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900">Secure Payments</h3>
-                <p className="text-sm text-gray-600">Powered by Stripe and PayPal</p>
+                <p className="text-sm text-gray-600">Powered by Stripe</p>
               </div>
             </div>
 
@@ -201,7 +155,7 @@ export default function ProductInput() {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900">Fast Checkout</h3>
-                <p className="text-sm text-gray-600">Shopify-style checkout experience</p>
+                <p className="text-sm text-gray-600">Shopify-style experience</p>
               </div>
             </div>
           </div>
@@ -225,19 +179,9 @@ export default function ProductInput() {
                     {productName || 'Product Name'}
                   </h4>
 
-                  <p className="text-2xl font-bold text-gray-900 mb-2">
+                  <p className="text-2xl font-bold text-gray-900 mb-4">
                     ${productPrice || '0.00'}
-                    {isSubscription && <span className="text-sm font-normal text-gray-600">/month</span>}
                   </p>
-
-                  {isSubscription && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>💳 Recurring Payment</strong><br/>
-                        Charged automatically every month
-                      </p>
-                    </div>
-                  )}
 
                   <div className="space-y-3">
                     <ShopifyButton
@@ -247,7 +191,7 @@ export default function ProductInput() {
                       variant="primary"
                       size="lg"
                     >
-                      {isCreating ? 'Creating...' : (isSubscription ? 'Start Subscription' : 'Buy Now')}
+                      {isCreating ? 'Creating...' : 'Buy Now'}
                     </ShopifyButton>
 
                     <ShopifyButton
@@ -257,15 +201,14 @@ export default function ProductInput() {
                       variant="outline"
                       size="lg"
                     >
-                      {isCreating ? 'Creating...' : (isSubscription ? 'Add Subscription' : 'Add to Cart')}
+                      {isCreating ? 'Creating...' : 'Add to Cart'}
                     </ShopifyButton>
                   </div>
 
                   <div className="mt-4 text-sm text-gray-600">
                     <p>✓ Secure checkout</p>
-                    <p>✓ {isSubscription ? 'Automatic billing' : 'Instant delivery'}</p>
+                    <p>✓ Instant delivery</p>
                     <p>✓ 24/7 support</p>
-                    {isSubscription && <p>✓ Cancel anytime</p>}
                   </div>
                 </>
               ) : (

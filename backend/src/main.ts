@@ -42,7 +42,9 @@ async function bootstrap() {
   console.log("🔧 Environment:", process.env.NODE_ENV || "development");
   console.log(
     "🌐 CORS enabled for:",
-    process.env.FRONTEND_URL || "http://localhost:3000"
+    process.env.FRONTEND_URL ||
+      "http://localhost:3000" ||
+      "http://localhost:29000/"
   );
 
   await app.listen(port);
