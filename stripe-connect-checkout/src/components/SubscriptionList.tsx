@@ -62,22 +62,65 @@ export default function SubscriptionList({ email, customerId, showAll = false }:
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams();
-      if (email) params.append('email', email);
-      if (customerId) params.append('customer_id', customerId);
-      if (showAll) params.append('show_all', 'true');
+      console.log('🔍 Fetching subscriptions from new backend...');
 
-      console.log('🔍 Fetching subscriptions with params:', params.toString());
+      let url;
+      if (email) {
+        // Fetch subscriptions for specific email
+        url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:29000'}/subscriptions/user/${encodeURIComponent(email)}`;
+      } else if (showAll) {
+        // Fetch all subscriptions (admin view)
+        url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:29000'}/subscriptions/all`;
+      } else {
+        // Default case - no subscriptions
+        setSubscriptions([]);
+        return;
+      }
 
-      const response = await fetch(`/api/subscriptions?${params}`);
+      console.log('🌐 Fetching from URL:', url);
+
+      const response = await fetch(url);
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch subscriptions');
       }
 
-      console.log('✅ Subscriptions fetched:', data.total);
-      setSubscriptions(data.subscriptions || []);
+      console.log('✅ Subscriptions fetched:', data.subscriptions?.length || 0);
+
+      // Transform backend data to match frontend interface
+      const transformedSubscriptions = (data.subscriptions || []).map((sub: any) => ({
+        id: sub.stripe_subscription_id,
+        status: sub.status,
+        current_period_start: Math.floor(new Date(sub.current_period_start).getTime() / 1000),
+        current_period_end: Math.floor(new Date(sub.current_period_end).getTime() / 1000),
+        cancel_at_period_end: sub.cancel_at_period_end,
+        created: Math.floor(new Date(sub.created_at).getTime() / 1000),
+        amount: sub.amount,
+        customer: {
+          id: sub.stripe_customer_id,
+          email: '', // Will be populated from user data
+          name: '', // Will be populated from user data
+        },
+        items: [{
+          id: sub.id,
+          quantity: 1,
+          price: {
+            id: sub.plan?.stripe_price_id || '',
+            unit_amount: Math.round(sub.amount * 100), // Convert to cents
+            currency: sub.currency,
+            recurring: {
+              interval: sub.interval,
+              interval_count: 1,
+            },
+            product: sub.plan?.name || 'Unknown',
+          },
+        }],
+        latest_invoice: null, // Will be populated from payment data
+        metadata: sub.metadata || {},
+      }));
+
+      setSubscriptions(transformedSubscriptions);
     } catch (error) {
       console.error('❌ Error fetching subscriptions:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch subscriptions');

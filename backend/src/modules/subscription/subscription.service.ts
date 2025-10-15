@@ -85,7 +85,7 @@ export class SubscriptionService {
       items: [{ price: plan.stripe_price_id }],
       payment_behavior: 'default_incomplete' as any,
       payment_settings: {
-        save_default_payment_method: 'on_subscription',
+        save_default_payment_method: 'on_subscription' as any,
         payment_method_types: ['card'] as any,
       },
       expand: ['latest_invoice.payment_intent'],
@@ -257,6 +257,37 @@ export class SubscriptionService {
           name: subscription.plan?.name || 'Unknown',
         },
       },
+    };
+  }
+
+  async getAllSubscriptions() {
+    const subscriptions = await this.subscriptionRepository.find({
+      relations: ['plan'],
+      order: { created_at: 'DESC' },
+    });
+
+    return {
+      success: true,
+      subscriptions: subscriptions.map(sub => ({
+        id: sub.id,
+        stripe_subscription_id: sub.stripe_subscription_id,
+        status: sub.status,
+        current_period_start: sub.current_period_start,
+        current_period_end: sub.current_period_end,
+        cancel_at_period_end: sub.cancel_at_period_end,
+        created_at: sub.created_at,
+        amount: sub.amount,
+        currency: sub.currency,
+        interval: sub.interval,
+        stripe_customer_id: sub.stripe_customer_id,
+        plan: {
+          name: sub.plan?.name || 'Unknown',
+          description: sub.plan?.description,
+          features: sub.plan?.features,
+          stripe_price_id: sub.plan?.stripe_price_id,
+        },
+        metadata: sub.metadata,
+      })),
     };
   }
 

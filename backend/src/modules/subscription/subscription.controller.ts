@@ -40,6 +40,22 @@ export class SubscriptionController {
     }
   }
 
+  @Get('all')
+  @ApiOperation({ summary: 'Get all subscriptions (admin)' })
+  @ApiResponse({ status: 200, description: 'All subscriptions retrieved successfully' })
+  async getAllSubscriptions() {
+    try {
+      const result = await this.subscriptionService.getAllSubscriptions();
+      return result;
+    } catch (error) {
+      console.error('❌ Error fetching all subscriptions:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch all subscriptions',
+      };
+    }
+  }
+
   @Get('plans')
   async getPlans() {
     try {

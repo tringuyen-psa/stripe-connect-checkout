@@ -53,9 +53,9 @@ Update `.env.local` with your Stripe credentials:
 
 ```env
 # Stripe Configuration
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key
-STRIPE_SECRET_KEY=sk_test_your_secret_key
-STRIPE_CONNECT_ACCOUNT_ID=acct_your_connect_account_id
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST=pk_test_your_publishable_key
+STRIPE_SECRET_KEY_TEST=sk_test_your_secret_key
+STRIPE_CONNECT_ACCOUNT_ID_TEST=acct_your_connect_account_id
 
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -68,6 +68,7 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ### 4. Stripe Setup
 
 1. **Create a Stripe Connect Account**
+
    - Go to [Stripe Dashboard](https://dashboard.stripe.com/connect)
    - Set up your Connect platform
    - Get your Connect Account ID
@@ -141,10 +142,10 @@ src/
 
 Use these Stripe test cards for testing:
 
-| Card Number | Description |
-|-------------|-------------|
+| Card Number         | Description        |
+| ------------------- | ------------------ |
 | 4242 4242 4242 4242 | Successful payment |
-| 4000 0000 0000 0002 | Card declined |
+| 4000 0000 0000 0002 | Card declined      |
 | 4000 0000 0000 9995 | Insufficient funds |
 
 More test cards available in [Stripe Testing Documentation](https://stripe.com/docs/testing).
@@ -167,9 +168,9 @@ stripe listen --forward-to localhost:3000/api/webhooks
 
 Make sure to set these in your hosting environment:
 
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_CONNECT_ACCOUNT_ID`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST`
+- `STRIPE_SECRET_KEY_TEST`
+- `STRIPE_CONNECT_ACCOUNT_ID_TEST`
 - `NEXT_PUBLIC_APP_URL`
 - `STRIPE_WEBHOOK_SECRET`
 

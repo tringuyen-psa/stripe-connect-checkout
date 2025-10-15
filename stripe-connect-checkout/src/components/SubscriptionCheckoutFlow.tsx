@@ -160,6 +160,11 @@ export default function SubscriptionCheckoutFlow() {
       if (!priceId) throw new Error('Failed to create recurring price');
 
       // Step 3: Create subscription
+      console.log('🚀 Creating subscription...');
+      console.log('👤 Customer ID:', customerId);
+      console.log('💰 Price ID:', priceId);
+      console.log('📧 Email:', contactData.email);
+
       const response = await fetch('/api/subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,9 +177,27 @@ export default function SubscriptionCheckoutFlow() {
       });
 
       const data = await response.json();
+      console.log('📡 Subscription API Response:', {
+        status: response.status,
+        ok: response.ok,
+        data: {
+          subscriptionId: data.subscriptionId,
+          clientSecret: data.clientSecret ? '✅ Present' : '❌ Missing',
+          customerId: data.customerId,
+          connectedAccountId: data.connectedAccountId,
+          chargeType: data.chargeType,
+          error: data.error
+        }
+      });
 
       if (!response.ok) {
+        console.error('❌ Subscription creation failed:', data.error);
         throw new Error(data.error || 'Failed to create subscription');
+      }
+
+      if (!data.clientSecret) {
+        console.error('❌ No client secret received from API');
+        throw new Error('Payment information is missing. Please try again.');
       }
 
       setSubscriptionData({
@@ -186,15 +209,18 @@ export default function SubscriptionCheckoutFlow() {
 
       console.log('✅ Subscription created successfully!');
       console.log('📋 Subscription ID:', data.subscriptionId);
-      console.log('🔗 Client Secret:', data.clientSecret);
+      console.log('🔗 Client Secret:', data.clientSecret.substring(0, 20) + '...');
       console.log('🏪 Connect Account:', data.connectedAccountId);
       console.log('💸 Tiền subscription sẽ đi thẳng vào Connect Account');
       console.log('=============================================');
 
       // Open popup for subscription payment confirmation
       console.log('🔓 Mở popup subscription payment');
+      const paymentUrl = `/subscription-payment?client_secret=${encodeURIComponent(data.clientSecret)}&subscription_id=${encodeURIComponent(data.subscriptionId)}`;
+      console.log('🔗 Payment URL:', paymentUrl);
+
       const popup = window.open(
-        `/subscription-payment?client_secret=${data.clientSecret}&subscription_id=${data.subscriptionId}`,
+        paymentUrl,
         'subscription-checkout',
         'width=500,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
       );

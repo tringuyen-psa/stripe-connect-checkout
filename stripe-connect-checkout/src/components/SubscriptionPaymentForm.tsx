@@ -56,27 +56,40 @@ export default function SubscriptionPaymentForm({ subscriptionId }: Subscription
     setIsLoading(true);
     setMessage('');
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/subscription-success?subscription_id=${subscriptionId}`,
-      },
-    });
+    console.log('🔍 Processing subscription payment...');
+    console.log('📋 Subscription ID:', subscriptionId);
 
-    if (error) {
-      if (error.type === 'card_error' || error.type === 'validation_error') {
-        setMessage(error.message || 'An unexpected error occurred.');
+    try {
+      // For subscriptions, we need to use confirmPayment for the first payment
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/subscription-success?subscription_id=${subscriptionId}`,
+        },
+        // Important: For subscriptions, don't redirect automatically
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        console.error('❌ Payment error:', error);
+        if (error.type === 'card_error' || error.type === 'validation_error') {
+          setMessage(error.message || 'An unexpected error occurred.');
+        } else {
+          setMessage(`Payment failed: ${error.message}`);
+        }
       } else {
-        setMessage('An unexpected error occurred.');
-      }
-    } else {
-      setMessage('Payment successful! Redirecting...');
-      setIsComplete(true);
+        console.log('✅ Payment successful!');
+        setMessage('Payment successful! Redirecting...');
+        setIsComplete(true);
 
-      // Redirect to success page
-      setTimeout(() => {
-        window.location.href = `/subscription-success?subscription_id=${subscriptionId}`;
-      }, 2000);
+        // Redirect to success page
+        setTimeout(() => {
+          window.location.href = `/subscription-success?subscription_id=${subscriptionId}`;
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('❌ Unexpected payment error:', err);
+      setMessage('An unexpected error occurred. Please try again.');
     }
 
     setIsLoading(false);
