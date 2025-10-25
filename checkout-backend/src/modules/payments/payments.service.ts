@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { CreateExpressPaymentDto } from './dto/create-express-payment.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -20,28 +21,23 @@ export class PaymentsService {
   async createPaymentIntent(createPaymentIntentDto: CreatePaymentIntentDto) {
     try {
       const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
-        amount: Math.round(createPaymentIntentDto.amount * 100), // Convert to cents
+        amount: Math.round(createPaymentIntentDto.amount * 100),
         currency: createPaymentIntentDto.currency.toLowerCase(),
         metadata: {
           customerEmail: createPaymentIntentDto.customerEmail,
         },
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        // Use activated payment methods including PayPal
+        payment_method_types: [
+          'card',
+          'link',
+          'paypal'
+        ],
       };
 
-      // If stripeAccountId is provided, create a destination charge
       if (createPaymentIntentDto.stripeAccountId) {
         paymentIntentParams.transfer_data = {
           destination: createPaymentIntentDto.stripeAccountId,
         };
-
-        // If payment method is provided, attach it to the intent
-        if (createPaymentIntentDto.paymentMethodId) {
-          paymentIntentParams.payment_method = createPaymentIntentDto.paymentMethodId;
-          paymentIntentParams.confirm = true;
-          paymentIntentParams.return_url = `${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/success`;
-        }
       }
 
       const paymentIntent = await this.stripe.paymentIntents.create(paymentIntentParams);
@@ -49,9 +45,55 @@ export class PaymentsService {
       return {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
+        paymentMethods: paymentIntent.payment_method_types,
       };
     } catch (error) {
       throw new BadRequestException(`Failed to create payment intent: ${error.message}`);
+    }
+  }
+
+  async createExpressCheckoutPayment(expressPaymentData: CreateExpressPaymentDto) {
+    try {
+      // Validate amount
+      if (!expressPaymentData.amount || expressPaymentData.amount <= 0) {
+        throw new BadRequestException('Invalid payment amount');
+      }
+
+      // Create simple payment intent for Express Checkout
+      const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+        amount: Math.round(expressPaymentData.amount * 100),
+        currency: expressPaymentData.currency.toLowerCase(),
+        metadata: {
+          customerEmail: expressPaymentData.customerEmail,
+          expressCheckout: 'true',
+        },
+        // Enable automatic payment methods for Express Checkout including PayPal
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'always',
+        },
+        // Enable future usage for saved payment methods
+        setup_future_usage: 'on_session',
+      };
+
+      if (expressPaymentData.stripeAccountId) {
+        paymentIntentParams.transfer_data = {
+          destination: expressPaymentData.stripeAccountId,
+        };
+      }
+
+      const paymentIntent = await this.stripe.paymentIntents.create(paymentIntentParams);
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: expressPaymentData.amount,
+        currency: expressPaymentData.currency,
+        availablePaymentMethods: paymentIntent.payment_method_types,
+      };
+    } catch (error) {
+      console.error('Express checkout error:', error);
+      throw new BadRequestException(`Failed to create express checkout: ${error.message}`);
     }
   }
 
@@ -62,8 +104,9 @@ export class PaymentsService {
       return {
         status: paymentIntent.status,
         paymentIntentId: paymentIntent.id,
-        amount: paymentIntent.amount / 100, // Convert back to dollars
+        amount: paymentIntent.amount / 100,
         currency: paymentIntent.currency,
+        paymentMethod: paymentIntent.payment_method,
       };
     } catch (error) {
       throw new BadRequestException(`Failed to retrieve payment intent: ${error.message}`);
@@ -127,7 +170,7 @@ export class PaymentsService {
     }
   }
 
-  async createCharge(charargeData: {
+  async createCharge(chargeData: {
     amount: number;
     currency: string;
     source: string;
@@ -136,19 +179,17 @@ export class PaymentsService {
   }) {
     try {
       const chargeParams: Stripe.ChargeCreateParams = {
-        amount: Math.round(charargeData.amount * 100),
-        currency: charargeData.currency.toLowerCase(),
-        source: charargeData.source,
-        description: charargeData.description || 'Payment for order',
+        amount: Math.round(chargeData.amount * 100),
+        currency: chargeData.currency.toLowerCase(),
+        source: chargeData.source,
+        description: chargeData.description || 'Payment for order',
       };
 
-      // Create charge on connected account if stripeAccountId is provided
-      if (charargeData.stripeAccountId) {
-        // Use Stripe Connect to create charge on behalf of connected account
+      if (chargeData.stripeAccountId) {
         const charge = await this.stripe.charges.create({
           ...chargeParams,
           transfer_data: {
-            destination: charargeData.stripeAccountId,
+            destination: chargeData.stripeAccountId,
           },
         });
 
@@ -157,10 +198,9 @@ export class PaymentsService {
           status: charge.status,
           amount: charge.amount / 100,
           currency: charge.currency,
-          destination: charargeData.stripeAccountId,
+          destination: chargeData.stripeAccountId,
         };
       } else {
-        // Create charge on platform account
         const charge = await this.stripe.charges.create(chargeParams);
 
         return {
@@ -173,5 +213,28 @@ export class PaymentsService {
     } catch (error) {
       throw new BadRequestException(`Failed to create charge: ${error.message}`);
     }
+  }
+
+  private getPaymentMethodsForCountry(countryCode: string): string[] {
+    // Base payment methods (only card and link for now)
+    const baseMethods = ['card', 'link']; // Only using activated payment methods
+
+    // Country-specific methods (using only activated methods)
+    const countryMethods: Record<string, string[]> = {
+      'US': [], // apple_pay, google_pay not activated yet
+      'GB': [],
+      'DE': [], // klarna not activated yet
+      'FR': [],
+      'NL': [],
+      'CA': [],
+      'AU': [],
+      'JP': [],
+      'SG': [],
+      'BR': [],
+      'MX': [],
+      'IN': [],
+    };
+
+    return [...baseMethods, ...(countryMethods[countryCode] || [])];
   }
 }

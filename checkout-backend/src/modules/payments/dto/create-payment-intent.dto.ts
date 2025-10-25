@@ -1,16 +1,15 @@
-import { IsNumber, IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum, Min } from 'class-validator';
 
 export class CreatePaymentIntentDto {
   @IsNumber()
-  @IsNotEmpty()
+  @Min(0.5)
   amount: number;
 
   @IsString()
-  @IsNotEmpty()
+  @IsEnum(['usd', 'eur', 'gbp', 'cad', 'aud'])
   currency: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsEmail()
   customerEmail: string;
 
   @IsString()

@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { PaymentsService } from "./payments.service";
 import { CreatePaymentIntentDto } from "./dto/create-payment-intent.dto";
+import { CreateExpressPaymentDto } from "./dto/create-express-payment.dto";
 
 @Controller("payments")
 export class PaymentsController {
@@ -79,5 +80,12 @@ export class PaymentsController {
     }
   ) {
     return this.paymentsService.createCharge(chargeData);
+  }
+
+  @Post("express-checkout")
+  async createExpressCheckoutPayment(
+    @Body() expressPaymentData: CreateExpressPaymentDto
+  ) {
+    return this.paymentsService.createExpressCheckoutPayment(expressPaymentData);
   }
 }
