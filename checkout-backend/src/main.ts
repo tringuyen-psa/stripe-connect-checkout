@@ -14,8 +14,8 @@ async function createApp(express?: Express) {
 
     // Enable CORS - cho phép tất cả các domain
     app.enableCors({
-      origin: true, // Allow all origins
-      credentials: true,
+      origin: '*', // Allow all origins
+      credentials: false, // Disabled for wildcard origin
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
       exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
@@ -59,7 +59,7 @@ export default async (req: any, res: any) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Credentials', 'false');
     res.status(200).end();
     return;
   }
