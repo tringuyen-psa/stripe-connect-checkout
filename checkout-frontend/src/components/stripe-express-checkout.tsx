@@ -64,16 +64,16 @@ export function StripeExpressCheckout({
     }
   }, [stripe, elements, clientSecret, testCountry, customerInfo.address.country])
 
-  // Get expected payment methods for test country (only activated methods)
+  // Get expected payment methods (only basic activated methods)
   const getExpectedPaymentMethods = (): string[] => {
-    // Only use activated payment methods: PayPal and Link
-    return ['PayPal', 'Link']
+    // Only use basic activated payment methods: Apple Pay, Google Pay
+    return ['Apple Pay', 'Google Pay']
   }
 
-  // Get local payment methods that should be available (only activated methods)
+  // Get local payment methods that should be available (only basic methods)
   const getLocalPaymentMethods = (): string[] => {
-    // Only use activated payment methods: PayPal and Link
-    return ['PayPal', 'Link']
+    // Only use basic activated payment methods: Apple Pay, Google Pay
+    return ['Apple Pay', 'Google Pay']
   }
 
   const handleConfirm = async (event: any) => {
@@ -177,8 +177,8 @@ export function StripeExpressCheckout({
             },
             buttonHeight: 48,
             paymentMethods: {
-              link: 'auto',
-              paypal: 'auto', // Enabled - PayPal is now activated
+              link: 'never', // Disabled - not activated
+              paypal: 'never', // Disabled - not activated
             },
             buttonTheme: {
               paypal: 'gold',

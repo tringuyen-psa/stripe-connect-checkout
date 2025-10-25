@@ -26,11 +26,9 @@ export class PaymentsService {
         metadata: {
           customerEmail: createPaymentIntentDto.customerEmail,
         },
-        // Use activated payment methods including PayPal
+        // Use only basic activated payment methods
         payment_method_types: [
-          'card',
-          'link',
-          'paypal'
+          'card'
         ],
       };
 
@@ -67,11 +65,9 @@ export class PaymentsService {
           customerEmail: expressPaymentData.customerEmail,
           expressCheckout: 'true',
         },
-        // Use only activated payment methods for Express Checkout
+        // Use only basic activated payment methods for Express Checkout
         payment_method_types: [
-          'card',
-          'link',
-          'paypal'
+          'card'
         ],
         // Enable future usage for saved payment methods
         setup_future_usage: 'on_session',
