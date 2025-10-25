@@ -51,58 +51,29 @@ export function StripeExpressCheckout({
         customerInfoCountry: customerInfo.address.country,
         paymentMethods: {
           paypal: 'auto',
-          link: 'auto',
-          applePay: 'auto',
-          googlePay: 'auto'
+          link: 'auto'
         }
       })
 
       if (testCountry) {
         console.log(`🌍 Regional Testing Enabled for ${testCountry}:`, {
-          expectedPaymentMethods: getExpectedPaymentMethods(testCountry),
-          localPaymentMethods: getLocalPaymentMethods(testCountry)
+          expectedPaymentMethods: getExpectedPaymentMethods(),
+          localPaymentMethods: getLocalPaymentMethods()
         })
       }
     }
   }, [stripe, elements, clientSecret, testCountry, customerInfo.address.country])
 
-  // Get expected payment methods for test country (PayPal now enabled)
-  const getExpectedPaymentMethods = (countryCode: string): string[] => {
-    const paymentMap: Record<string, string[]> = {
-      'US': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'GB': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'DE': ['PayPal', 'Link', 'Klarna', 'Apple Pay'],
-      'FR': ['PayPal', 'Link', 'Klarna', 'Apple Pay'],
-      'NL': ['PayPal', 'Link', 'Klarna', 'Apple Pay'],
-      'CA': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'AU': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'JP': ['PayPal', 'Link', 'Apple Pay'],
-      'SG': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'BR': ['PayPal', 'Link'],
-      'MX': ['PayPal', 'Link', 'Apple Pay'],
-      'IN': ['PayPal', 'Link']
-    }
-    return paymentMap[countryCode] || ['PayPal', 'Link']
+  // Get expected payment methods for test country (only activated methods)
+  const getExpectedPaymentMethods = (): string[] => {
+    // Only use activated payment methods: PayPal and Link
+    return ['PayPal', 'Link']
   }
 
-  // Get local payment methods that should be available (PayPal now enabled)
-  const getLocalPaymentMethods = (countryCode: string): string[] => {
-    // This is a simplified mapping - actual availability depends on Stripe
-    const localMap: Record<string, string[]> = {
-      'US': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'GB': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'DE': ['PayPal', 'Link', 'Klarna', 'Apple Pay'],
-      'FR': ['PayPal', 'Link', 'Klarna', 'Apple Pay'],
-      'NL': ['PayPal', 'Link', 'Klarna', 'Apple Pay'],
-      'CA': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'AU': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'JP': ['PayPal', 'Link', 'Apple Pay'],
-      'SG': ['PayPal', 'Link', 'Apple Pay', 'Google Pay'],
-      'BR': ['PayPal', 'Link'],
-      'MX': ['PayPal', 'Link', 'Apple Pay'],
-      'IN': ['PayPal', 'Link']
-    }
-    return localMap[countryCode] || ['PayPal', 'Link']
+  // Get local payment methods that should be available (only activated methods)
+  const getLocalPaymentMethods = (): string[] => {
+    // Only use activated payment methods: PayPal and Link
+    return ['PayPal', 'Link']
   }
 
   const handleConfirm = async (event: any) => {
@@ -206,8 +177,6 @@ export function StripeExpressCheckout({
             },
             buttonHeight: 48,
             paymentMethods: {
-              applePay: 'auto',
-              googlePay: 'auto',
               link: 'auto',
               paypal: 'auto', // Enabled - PayPal is now activated
             },
