@@ -14,15 +14,13 @@ async function createApp(express?: Express) {
 
     // Enable CORS - cho phép tất cả các domain
     app.enableCors({
-      origin: [
-        '*',
-        'https://stripe-connect-checkout-fe.vercel.app',
-        'http://localhost:3000', // dev
-      ], // Cho phép tất cả các domain
+      origin: true, // Allow all origins
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
       exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
     });
 
     // Global validation pipe - more permissive
@@ -56,6 +54,16 @@ if (!process.env.VERCEL) {
 
 // For Vercel serverless
 export default async (req: any, res: any) => {
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.status(200).end();
+    return;
+  }
+
   const app = await createApp();
   const server = app.getHttpServer();
 
