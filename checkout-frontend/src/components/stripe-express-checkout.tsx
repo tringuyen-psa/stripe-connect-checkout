@@ -82,33 +82,70 @@ export function StripeExpressCheckout({
     setLoading(true)
 
     try {
-      // Use stripe.confirmPayment according to migration guide
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/success`,
-          payment_method_data: {
-            billing_details: {
-              name: customerInfo.name,
-              email: customerEmail,
-              address: {
-                line1: customerInfo.address.line1,
-                line2: customerInfo.address.line2 || undefined,
-                city: customerInfo.address.city,
-                state: customerInfo.address.state,
-                postal_code: customerInfo.address.postal_code,
-                country: customerInfo.address.country,
-              },
-            },
-          },
-        },
-        redirect: 'if_required', // Only redirect for payment methods that require it
-      })
-
-      if (error) {
-        console.error('Stripe confirmation error:', error)
-        onError(error.message || 'Payment failed')
+      // First, submit the elements to get the payment method
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        onError(submitError.message || 'Payment submission failed')
         return
+      }
+
+      // Create payment intent for Express Checkout if we don't have a clientSecret
+      if (!clientSecret) {
+        const expressPaymentResponse = await apiClient.createExpressCheckoutPayment({
+          amount: getTotal(),
+          currency: 'usd',
+          customerEmail,
+          customerInfo: {
+            name: customerInfo.name,
+            email: customerEmail,
+            address: {
+              line1: customerInfo.address.line1,
+              line2: customerInfo.address.line2,
+              city: customerInfo.address.city,
+              state: customerInfo.address.state,
+              postal_code: customerInfo.address.postal_code,
+              country: customerInfo.address.country,
+            }
+          }
+        })
+
+        if (expressPaymentResponse.error || !expressPaymentResponse.data) {
+          throw new Error(expressPaymentResponse.error || 'Failed to create express checkout payment')
+        }
+
+        // We got a clientSecret, now we can confirm the payment
+        const { client_secret } = expressPaymentResponse.data as any
+
+        const { error } = await stripe.confirmPayment({
+          elements,
+          clientSecret: client_secret,
+          confirmParams: {
+            return_url: `${window.location.origin}/success`,
+          },
+          redirect: 'if_required',
+        })
+
+        if (error) {
+          console.error('Stripe confirmation error:', error)
+          onError(error.message || 'Payment failed')
+          return
+        }
+      } else {
+        // Use existing clientSecret
+        const { error } = await stripe.confirmPayment({
+          elements,
+          clientSecret,
+          confirmParams: {
+            return_url: `${window.location.origin}/success`,
+          },
+          redirect: 'if_required',
+        })
+
+        if (error) {
+          console.error('Stripe confirmation error:', error)
+          onError(error.message || 'Payment failed')
+          return
+        }
       }
 
       // If we get here with no error and no redirect, payment was successful
