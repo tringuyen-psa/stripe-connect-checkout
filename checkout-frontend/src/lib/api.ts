@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:29000/api';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -164,6 +164,49 @@ class ApiClient {
     return this.request('/payments/confirm-payment', {
       method: 'POST',
       body: JSON.stringify(confirmPaymentData),
+    });
+  }
+
+  async createExpressCheckoutPayment(expressPaymentData: {
+    amount: number;
+    currency: string;
+    customerEmail: string;
+    paymentMethod?: 'apple-pay' | 'google-pay' | 'paypal' | 'link';
+    stripeAccountId?: string;
+    countryCode?: string;
+    customerInfo?: {
+      name: string;
+      email: string;
+      address?: {
+        line1: string;
+        line2?: string;
+        city: string;
+        state: string;
+        postal_code: string;
+        country: string;
+      };
+    };
+  }) {
+    return this.request('/payments/express-checkout', {
+      method: 'POST',
+      body: JSON.stringify(expressPaymentData),
+    });
+  }
+
+  async validateAddressAndGetPaymentMethods(addressData: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postal_code: string;
+    country: string;
+  }, amount?: number) {
+    return this.request('/payments/validate-address', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...addressData,
+        amount: amount || 100
+      }),
     });
   }
 }

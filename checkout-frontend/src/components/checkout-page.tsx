@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, Lock, Edit, AlertCircle } from "lucide-react"
+import { ChevronLeft, Lock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
@@ -9,12 +9,19 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { OrderSummary } from "./order-summary"
 import { PaymentMethods } from "./payment-methods"
+import { StripeExpressCheckout } from "./stripe-express-checkout"
 import { apiClient } from "@/lib/api"
 import { useStripe } from '@stripe/react-stripe-js'
 import { useProducts } from "@/context/ProductContext"
 import { useRef } from 'react'
+import { countryList } from "@/lib/countries"
+import { CountrySelector } from "./country-selector"
 
-export function CheckoutPage() {
+interface CheckoutPageProps {
+    clientSecret?: string
+}
+
+export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
     const stripe = useStripe()
     const { getTotal, products } = useProducts()
     const cardInputRef = useRef<any>(null)
@@ -27,10 +34,20 @@ export function CheckoutPage() {
     const [state, setState] = useState("California")
     const [zipCode, setZipCode] = useState("90210")
     const [phone, setPhone] = useState("+1 (555) 123-4567")
+    const [country, setCountry] = useState("United States")
     const [newsletter, setNewsletter] = useState(true)
     const [smsUpdates, setSmsUpdates] = useState(true)
     const [paymentMethod, setPaymentMethod] = useState("credit-card")
     const [saveInfo, setSaveInfo] = useState(true)
+
+    // Simple country testing for regional payment methods
+    const [useRegionalTesting, setUseRegionalTesting] = useState(false)
+    const [testCountry, setTestCountry] = useState("US")
+
+    // Handle country change for testing
+    const handleCountryChange = (country: string) => {
+        setTestCountry(country)
+    }
 
     // Payment states
     const [isProcessing, setIsProcessing] = useState(false)
@@ -56,6 +73,27 @@ export function CheckoutPage() {
         return getTotal()
     }
 
+    // Handle Express Checkout success
+    const handleExpressCheckoutSuccess = async (orderId: string, paymentId: string) => {
+        const params = new URLSearchParams({
+            orderId,
+            paymentId,
+            amount: getOrderTotal().toString(),
+            currency: 'usd',
+            status: 'completed',
+            email: email,
+            paymentMethod: 'express-checkout'
+        })
+
+        window.location.href = '/success?' + params.toString()
+    }
+
+    // Handle Express Checkout error
+    const handleExpressCheckoutError = (error: string) => {
+        setPaymentError(error)
+    }
+
+    
     const handlePlaceOrder = async () => {
         // Check for missing required fields
         const missingFields = []
@@ -118,8 +156,7 @@ export function CheckoutPage() {
                     currency: 'usd',
                     customerEmail: email,
                     paymentMethodId: paymentMethodData.id,
-                    // Add Stripe Connect account ID for destination charges
-                    stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID,
+                    // stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID, // Disabled: Cannot transfer to your own account
                 })
 
                 if (paymentIntentResponse.error || !paymentIntentResponse.data) {
@@ -213,17 +250,48 @@ export function CheckoutPage() {
                         {/* Express Checkout */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <p className="text-sm font-semibold mb-4">Express checkout</p>
-                            <div className="grid grid-cols-3 gap-3 mb-4">
-                                <Button className="h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold">
-                                    shop
-                                </Button>
-                                <Button className="h-12 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold">
-                                    PayPal
-                                </Button>
-                                <Button className="h-12 bg-white hover:bg-gray-50 text-black font-semibold border border-gray-300">
-                                    G Pay
-                                </Button>
+
+                            {/* Simple Country Testing */}
+                            <div className="mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-gray-600">🌍 Test payment methods by country</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setUseRegionalTesting(!useRegionalTesting)}
+                                        className="text-xs"
+                                    >
+                                        {useRegionalTesting ? 'Use Default' : 'Test Countries'}
+                                    </Button>
+                                </div>
+
+                                {useRegionalTesting && (
+                                    <CountrySelector
+                                        onCountryChange={handleCountryChange}
+                                        disabled={isProcessing}
+                                    />
+                                )}
                             </div>
+
+                            <StripeExpressCheckout
+                                customerEmail={email}
+                                customerInfo={{
+                                    name: `${firstName} ${lastName}`,
+                                    address: {
+                                        line1: address,
+                                        line2: apartment || undefined,
+                                        city: city,
+                                        state: state,
+                                        postal_code: zipCode,
+                                        country: useRegionalTesting ? testCountry : country
+                                    }
+                                }}
+                                onSuccess={handleExpressCheckoutSuccess}
+                                onError={handleExpressCheckoutError}
+                                disabled={isProcessing || getTotal() === 0}
+                                clientSecret={clientSecret}
+                                testCountry={useRegionalTesting ? testCountry : undefined}
+                            />
                             <p className="text-xs text-gray-500 text-center mb-3">
                                 By continuing with your payment, you agree to the future charges listed on this page and the cancellation policy.
                             </p>
@@ -266,14 +334,19 @@ export function CheckoutPage() {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h2 className="text-lg font-semibold mb-4">Delivery</h2>
                             <div className="space-y-4">
-                                <Select value="United States" onValueChange={() => { }}>
+                                <Select value={country} onValueChange={(value) => {
+                                    setCountry(value)
+                                    clearError()
+                                }}>
                                     <SelectTrigger className="border-gray-300">
-                                        <SelectValue />
+                                        <SelectValue placeholder="Select country" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="United States">United States</SelectItem>
-                                        <SelectItem value="Canada">Canada</SelectItem>
-                                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                                        {countryList.map((country) => (
+                                            <SelectItem key={country.code} value={country.name}>
+                                                {country.name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
 
@@ -370,13 +443,14 @@ export function CheckoutPage() {
                             </div>
                         </div>
 
+  
                         {/* Shipping Method */}
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        {/* <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h2 className="text-lg font-semibold mb-2">Shipping method</h2>
                             <p className="text-sm text-gray-500">
                                 Enter your shipping address to view available shipping methods.
                             </p>
-                        </div>
+                        </div> */}
 
                         {/* Payment */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">

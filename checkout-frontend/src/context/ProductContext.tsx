@@ -21,7 +21,20 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
 export function ProductProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: "1",
+      name: "AG1 Monthly Subscription",
+      price: 79.00,
+      quantity: 1
+    },
+    {
+      id: "2",
+      name: "AG1 Travel Packs",
+      price: 49.00,
+      quantity: 1
+    }
+  ])
 
   const addProduct = (product: Product) => {
     const existingProduct = products.find(p => p.id === product.id)
