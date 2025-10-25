@@ -67,11 +67,12 @@ export class PaymentsService {
           customerEmail: expressPaymentData.customerEmail,
           expressCheckout: 'true',
         },
-        // Enable automatic payment methods for Express Checkout including PayPal
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: 'always',
-        },
+        // Use only activated payment methods for Express Checkout
+        payment_method_types: [
+          'card',
+          'link',
+          'paypal'
+        ],
         // Enable future usage for saved payment methods
         setup_future_usage: 'on_session',
       };
@@ -213,28 +214,5 @@ export class PaymentsService {
     } catch (error) {
       throw new BadRequestException(`Failed to create charge: ${error.message}`);
     }
-  }
-
-  private getPaymentMethodsForCountry(countryCode: string): string[] {
-    // Base payment methods (only card and link for now)
-    const baseMethods = ['card', 'link']; // Only using activated payment methods
-
-    // Country-specific methods (using only activated methods)
-    const countryMethods: Record<string, string[]> = {
-      'US': [], // apple_pay, google_pay not activated yet
-      'GB': [],
-      'DE': [], // klarna not activated yet
-      'FR': [],
-      'NL': [],
-      'CA': [],
-      'AU': [],
-      'JP': [],
-      'SG': [],
-      'BR': [],
-      'MX': [],
-      'IN': [],
-    };
-
-    return [...baseMethods, ...(countryMethods[countryCode] || [])];
   }
 }
