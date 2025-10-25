@@ -5,46 +5,18 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS with specific origins
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-    'http://localhost:3000',
-    'http://localhost:29000',
-  ];
-
-  // Enable more permissive CORS for development
+  // Enable CORS for all domains
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-
-      // Allow localhost and local network
-      if (origin.startsWith('http://localhost:') ||
-          origin.startsWith('http://127.0.0.1:') ||
-          origin.startsWith('http://192.168.')) {
-        return callback(null, true);
-      }
-
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      // For development, allow more origins
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`CORS: Allowing origin ${origin} in development mode`);
-        return callback(null, true);
-      }
-
-      callback(new Error('Not allowed by CORS'));
-    },
+    origin: '*',
     credentials: true,
   });
 
-  // Global validation pipe
+  // Global validation pipe - more permissive
   app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
+    whitelist: false, // Allow all properties
+    forbidNonWhitelisted: false, // Don't forbid extra properties
     transform: true,
+    skipMissingProperties: true, // Skip validation for missing properties
   }));
 
   // Global prefix
