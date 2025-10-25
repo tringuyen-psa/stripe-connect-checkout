@@ -49,14 +49,7 @@ export function StripeExpressCheckout({
         hasClientSecret: !!clientSecret,
         testCountry: testCountry || 'Not set',
         customerInfoCountry: customerInfo.address.country,
-        paymentMethods: {
-          applePay: 'auto',
-          googlePay: 'auto',
-          paypal: 'auto',
-          link: 'auto',
-          klarna: 'auto',
-          amazonPay: 'auto',
-        }
+        paymentMethods: 'auto - Stripe will determine available methods based on account activation'
       })
 
       if (testCountry) {
@@ -180,14 +173,7 @@ export function StripeExpressCheckout({
               overflow: 'auto',
             },
             buttonHeight: 48,
-            paymentMethods: {
-              link: 'auto', // Enabled
-              paypal: 'auto', // Enabled
-              applePay: 'auto', // Enabled
-              googlePay: 'auto', // Enabled
-              klarna: 'auto', // Enabled
-              amazonPay: 'auto', // Enabled
-            },
+            // Don't specify paymentMethods to let Stripe automatically show all available methods
             buttonTheme: {
               paypal: 'gold',
             },

@@ -65,20 +65,8 @@ export class PaymentsService {
           customerEmail: expressPaymentData.customerEmail,
           expressCheckout: 'true',
         },
-        // Enable all payment methods for Express Checkout
-        payment_method_types: [
-          'card',
-          'apple_pay',
-          'google_pay',
-          'paypal',
-          'link',
-          'klarna',
-          'amazon_pay',
-          'afterpay_clearpay',
-          'cashapp',
-          'alipay',
-          'wechat_pay'
-        ],
+        // Let Stripe automatically determine available payment methods
+        // Don't specify payment_method_types to allow all available methods
         // Enable future usage for saved payment methods
         setup_future_usage: 'on_session',
       };
