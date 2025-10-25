@@ -14,7 +14,11 @@ async function createApp(express?: Express) {
 
     // Enable CORS - cho phép tất cả các domain
     app.enableCors({
-      origin: '*', // Cho phép tất cả các domain
+      origin: [
+        '*',
+        'https://stripe-connect-checkout-fe.vercel.app',
+        'http://localhost:3000', // dev
+      ], // Cho phép tất cả các domain
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
