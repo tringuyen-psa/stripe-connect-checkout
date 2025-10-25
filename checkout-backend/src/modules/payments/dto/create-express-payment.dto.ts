@@ -54,8 +54,8 @@ export class CreateExpressPaymentDto {
   customerEmail: string;
 
   @IsOptional()
-  @IsEnum(['apple-pay', 'google-pay', 'paypal', 'link'])
-  paymentMethod?: 'apple-pay' | 'google-pay' | 'paypal' | 'link';
+  @IsEnum(['apple-pay', 'google-pay', 'paypal', 'link', 'klarna', 'amazon-pay', 'afterpay-clearpay', 'cashapp', 'alipay', 'wechat-pay'])
+  paymentMethod?: 'apple-pay' | 'google-pay' | 'paypal' | 'link' | 'klarna' | 'amazon-pay' | 'afterpay-clearpay' | 'cashapp' | 'alipay' | 'wechat-pay';
 
   @IsString()
   @IsOptional()

@@ -171,7 +171,7 @@ class ApiClient {
     amount: number;
     currency: string;
     customerEmail: string;
-    paymentMethod?: 'apple-pay' | 'google-pay' | 'paypal' | 'link';
+    paymentMethod?: 'apple-pay' | 'google-pay' | 'paypal' | 'link' | 'klarna' | 'amazon-pay' | 'afterpay-clearpay' | 'cashapp' | 'alipay' | 'wechat-pay';
     stripeAccountId?: string;
     countryCode?: string;
     customerInfo?: {

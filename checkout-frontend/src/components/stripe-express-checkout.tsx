@@ -50,8 +50,12 @@ export function StripeExpressCheckout({
         testCountry: testCountry || 'Not set',
         customerInfoCountry: customerInfo.address.country,
         paymentMethods: {
+          applePay: 'auto',
+          googlePay: 'auto',
           paypal: 'auto',
-          link: 'auto'
+          link: 'auto',
+          klarna: 'auto',
+          amazonPay: 'auto',
         }
       })
 
@@ -64,16 +68,16 @@ export function StripeExpressCheckout({
     }
   }, [stripe, elements, clientSecret, testCountry, customerInfo.address.country])
 
-  // Get expected payment methods (only basic activated methods)
+  // Get expected payment methods (all enabled methods)
   const getExpectedPaymentMethods = (): string[] => {
-    // Only use basic activated payment methods: Apple Pay, Google Pay
-    return ['Apple Pay', 'Google Pay']
+    // All enabled payment methods
+    return ['Apple Pay', 'Google Pay', 'PayPal', 'Link', 'Klarna', 'Amazon Pay']
   }
 
-  // Get local payment methods that should be available (only basic methods)
+  // Get local payment methods that should be available (all enabled methods)
   const getLocalPaymentMethods = (): string[] => {
-    // Only use basic activated payment methods: Apple Pay, Google Pay
-    return ['Apple Pay', 'Google Pay']
+    // All enabled payment methods
+    return ['Apple Pay', 'Google Pay', 'PayPal', 'Link', 'Klarna', 'Amazon Pay']
   }
 
   const handleConfirm = async (event: any) => {
@@ -177,8 +181,12 @@ export function StripeExpressCheckout({
             },
             buttonHeight: 48,
             paymentMethods: {
-              link: 'never', // Disabled - not activated
-              paypal: 'never', // Disabled - not activated
+              link: 'auto', // Enabled
+              paypal: 'auto', // Enabled
+              applePay: 'auto', // Enabled
+              googlePay: 'auto', // Enabled
+              klarna: 'auto', // Enabled
+              amazonPay: 'auto', // Enabled
             },
             buttonTheme: {
               paypal: 'gold',

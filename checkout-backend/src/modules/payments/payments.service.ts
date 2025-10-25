@@ -65,9 +65,19 @@ export class PaymentsService {
           customerEmail: expressPaymentData.customerEmail,
           expressCheckout: 'true',
         },
-        // Use only basic activated payment methods for Express Checkout
+        // Enable all payment methods for Express Checkout
         payment_method_types: [
-          'card'
+          'card',
+          'apple_pay',
+          'google_pay',
+          'paypal',
+          'link',
+          'klarna',
+          'amazon_pay',
+          'afterpay_clearpay',
+          'cashapp',
+          'alipay',
+          'wechat_pay'
         ],
         // Enable future usage for saved payment methods
         setup_future_usage: 'on_session',
