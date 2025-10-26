@@ -35,4 +35,9 @@ export class CheckoutController {
   async createCharge(@Body() chargeData: any) {
     return this.checkoutService.createCharge(chargeData);
   }
+
+  @Post('test-payment-methods')
+  async testPaymentMethods(@Body() testData: { countryCode?: string; currency?: string }) {
+    return this.checkoutService.testAvailablePaymentMethods(testData);
+  }
 }
