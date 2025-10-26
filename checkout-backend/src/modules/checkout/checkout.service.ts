@@ -65,7 +65,7 @@ export class CheckoutService {
     stripeAccountId?: string;
   }) {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const paymentIntentData: any = {
         amount: Math.round(paymentData.amount * 100), // Convert to cents
         currency: paymentData.currency,
         metadata: {
@@ -74,10 +74,16 @@ export class CheckoutService {
         payment_method: paymentData.paymentMethodId,
         confirmation_method: paymentData.paymentMethodId ? 'manual' : 'automatic',
         confirm: !!paymentData.paymentMethodId,
-        ...(paymentData.stripeAccountId && {
+      };
+
+      let paymentIntent;
+      if (paymentData.stripeAccountId) {
+        paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData, {
           stripeAccount: paymentData.stripeAccountId,
-        }),
-      });
+        });
+      } else {
+        paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData);
+      }
 
       return {
         success: true,
@@ -148,11 +154,14 @@ export class CheckoutService {
       }
 
       // Create payment intent with optimized configuration
-      const paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData,
-        paymentData.stripeAccountId ? {
+      let paymentIntent;
+      if (paymentData.stripeAccountId) {
+        paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData, {
           stripeAccount: paymentData.stripeAccountId,
-        } : {}
-      );
+        });
+      } else {
+        paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData);
+      }
 
       const responseTime = Date.now() - startTime;
       console.log(`⚡ Express Checkout created in ${responseTime}ms: ${paymentIntent.id}`);
@@ -244,14 +253,21 @@ export class CheckoutService {
     stripeAccountId?: string;
   }) {
     try {
-      const charge = await this.stripe.charges.create({
+      const chargeRequestData: any = {
         amount: Math.round(chargeData.amount * 100),
         currency: chargeData.currency,
         source: chargeData.source,
         description: chargeData.description,
-      }, chargeData.stripeAccountId ? {
-        stripeAccount: chargeData.stripeAccountId,
-      } : {});
+      };
+
+      let charge;
+      if (chargeData.stripeAccountId) {
+        charge = await this.stripe.charges.create(chargeRequestData, {
+          stripeAccount: chargeData.stripeAccountId,
+        });
+      } else {
+        charge = await this.stripe.charges.create(chargeRequestData);
+      }
 
       return {
         success: true,
