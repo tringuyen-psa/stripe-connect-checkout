@@ -1,7 +1,9 @@
 import { Controller, Post, Body, Headers, BadRequestException, Logger } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
+@ApiTags('Webhooks')
 @Controller('webhooks')
 export class WebhooksController {
   private readonly logger = new Logger(WebhooksController.name);
@@ -18,6 +20,30 @@ export class WebhooksController {
   }
 
   @Post('stripe')
+  @ApiOperation({
+    summary: 'Handle Stripe Webhook Events',
+    description: 'Processes webhook events from Stripe for payment status updates'
+  })
+  @ApiHeader({
+    name: 'stripe-signature',
+    description: 'Stripe webhook signature for verification',
+    required: true,
+    example: 'v1,1234567890abcdef,1234567890abcdef'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        received: { type: 'boolean', example: true }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid webhook signature or configuration'
+  })
   async handleStripeWebhook(
     @Body() rawBody: Buffer,
     @Headers('stripe-signature') signature: string,

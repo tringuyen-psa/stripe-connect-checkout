@@ -40,7 +40,7 @@ async function createApp(express?: Express) {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api-docs', app, document);
+    SwaggerModule.setup('docs', app, document);
 
     if (!express) {
       const port = process.env.PORT || 29000;
