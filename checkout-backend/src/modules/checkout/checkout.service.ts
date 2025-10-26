@@ -192,10 +192,36 @@ export class CheckoutService {
   private getAvailablePaymentMethodsFast(countryCode: string): string[] {
     const cached = this.getCachedPaymentMethods(countryCode);
     if (cached) {
+      console.log(`📋 Using cached methods for ${countryCode}: ${cached.methods.join(', ')}`);
       return cached.methods || ['card'];
     }
 
-    // Fallback to static mapping for instant response
+    // Check if we're in test mode - return all methods for testing
+    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (isTestMode || isDevelopment) {
+      // In development/test mode, return more payment methods for testing
+      const testMethods: { [key: string]: string[] } = {
+        'US': ['card', 'link', 'apple_pay', 'google_pay', 'paypal', 'klarna', 'afterpay_clearpay'],
+        'GB': ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna'],
+        'DE': ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna'],
+        'FR': ['card', 'apple_pay', 'google_pay', 'paypal'],
+        'AU': ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna'],
+        'CA': ['card', 'apple_pay', 'google_pay', 'afterpay_clearpay'],
+        'JP': ['card', 'apple_pay', 'google_pay'],
+      };
+
+      const methods = testMethods[countryCode] || ['card'];
+      console.log(`🧪 Test mode - returning methods for ${countryCode}: ${methods.join(', ')}`);
+
+      // Cache the test methods
+      this.setCachedPaymentMethods(countryCode, { methods, source: 'test-mode' });
+
+      return methods;
+    }
+
+    // Production/Live mode - conservative payment methods
     const staticMethods: { [key: string]: string[] } = {
       'US': ['card', 'link', 'apple_pay', 'google_pay'],
       'GB': ['card', 'apple_pay', 'google_pay'],
@@ -207,9 +233,10 @@ export class CheckoutService {
     };
 
     const methods = staticMethods[countryCode] || ['card'];
+    console.log(`🔒 Production mode - returning conservative methods for ${countryCode}: ${methods.join(', ')}`);
 
     // Cache the static methods temporarily
-    this.setCachedPaymentMethods(countryCode, { methods, source: 'static' });
+    this.setCachedPaymentMethods(countryCode, { methods, source: 'production-static' });
 
     return methods;
   }
