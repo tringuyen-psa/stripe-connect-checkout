@@ -38,10 +38,39 @@ async function createApp(express?: Express) {
   return app;
 }
 
-// ⛔ Chỉ chạy local
-if (!process.env.VERCEL) {
+// ⛔ Chỉ chạy local development
+if (!process.env.VERCEL && !process.env.NODE_ENV?.includes('production')) {
   createApp();
 }
 
-// ✅ Cho Vercel import
-export default createApp;
+// ✅ Vercel serverless function handler
+export default async function handler(req: any, res: any) {
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.status(200).end();
+    return;
+  }
+
+  try {
+    const express = require('express')();
+    const app = await createApp(express);
+    const server = app.getHttpServer();
+
+    // Handle the request
+    return new Promise((resolve, reject) => {
+      server.emit('request', req, res);
+      res.on('finish', resolve);
+      res.on('error', reject);
+    });
+  } catch (error) {
+    console.error('Serverless function error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: error.message
+    });
+  }
+}
