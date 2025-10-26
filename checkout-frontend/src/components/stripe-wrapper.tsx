@@ -14,8 +14,7 @@ interface StripeWrapperProps {
 }
 
 export function StripeWrapper({ children, clientSecret, amount, currency = 'usd' }: StripeWrapperProps) {
-    // According to migration guide, use mode: 'payment' with amount and currency
-    // clientSecret is passed to the confirmPayment function, not Elements options
+    // Configure Elements with proper options according to Stripe docs
     const options = amount ? {
         mode: 'payment' as const,
         amount: Math.round(amount * 100), // Convert to cents
@@ -23,7 +22,7 @@ export function StripeWrapper({ children, clientSecret, amount, currency = 'usd'
         appearance: {
             theme: 'stripe' as const,
             variables: {
-                colorPrimary: '#7c3aed',
+                colorPrimary: '#1a5f3f', // AG1 brand color
                 colorBackground: '#ffffff',
                 colorText: '#1f2937',
                 colorDanger: '#dc2626',
@@ -32,7 +31,22 @@ export function StripeWrapper({ children, clientSecret, amount, currency = 'usd'
                 borderRadius: '6px',
             },
         },
-    } : {}
+        locale: 'en' as const, // Set locale based on user preference
+    } : {
+        appearance: {
+            theme: 'stripe' as const,
+            variables: {
+                colorPrimary: '#1a5f3f',
+                colorBackground: '#ffffff',
+                colorText: '#1f2937',
+                colorDanger: '#dc2626',
+                fontFamily: 'system-ui, sans-serif',
+                spacingUnit: '4px',
+                borderRadius: '6px',
+            },
+        },
+        locale: 'en' as const,
+    }
 
     return (
         <Elements stripe={stripePromise} options={options}>

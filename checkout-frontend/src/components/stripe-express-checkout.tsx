@@ -5,6 +5,7 @@ import { useStripe, useElements, ExpressCheckoutElement } from '@stripe/react-st
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api"
 import { useProducts } from "@/context/ProductContext"
+import { logStripeError, isExtensionError } from "@/lib/stripe-error-handler"
 
 interface StripeExpressCheckoutProps {
   customerEmail: string
@@ -210,12 +211,14 @@ export function StripeExpressCheckout({
               overflow: 'auto',
             },
             buttonHeight: 48,
-            // Don't specify paymentMethods to let Stripe automatically show all available methods
+            // Configure specific button types for each payment method
+            buttonType: {
+              applePay: 'buy',
+              googlePay: 'buy',
+              paypal: 'buynow',
+            },
             buttonTheme: {
               paypal: 'gold',
-            },
-            buttonType: {
-              paypal: 'checkout',
             },
             emailRequired: true,
           }}
@@ -225,7 +228,11 @@ export function StripeExpressCheckout({
             // Optionally show a message or log the cancellation
           }}
           onLoadError={(error) => {
-            console.error('Express Checkout load error:', error)
+            logStripeError(error, 'Express Checkout load error')
+            // Filter out browser extension communication errors
+            if (error.error && error.error.message && isExtensionError(error.error)) {
+              return
+            }
             onError('Failed to load payment options. Please refresh the page.')
           }}
           onReady={({ availablePaymentMethods }) => {
