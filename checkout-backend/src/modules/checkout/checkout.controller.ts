@@ -40,4 +40,14 @@ export class CheckoutController {
   async testPaymentMethods(@Body() testData: { countryCode?: string; currency?: string }) {
     return this.checkoutService.testAvailablePaymentMethods(testData);
   }
+
+  @Get('payment-methods/:countryCode')
+  async getPaymentMethods(@Param('countryCode') countryCode: string) {
+    return this.checkoutService.getPaymentMethodsFast(countryCode);
+  }
+
+  @Get('payment-methods')
+  async getAllPaymentMethods() {
+    return this.checkoutService.getAllPopularPaymentMethods();
+  }
 }

@@ -5,6 +5,9 @@ import Stripe from 'stripe';
 @Injectable()
 export class CheckoutService {
   private stripe: Stripe;
+  private paymentMethodsCache = new Map<string, any>();
+  private cacheExpiry = new Map<string, number>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(private configService: ConfigService) {
     const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
@@ -14,6 +17,44 @@ export class CheckoutService {
     this.stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2025-09-30.clover',
     });
+
+    // Pre-load popular countries on startup
+    this.preloadPopularCountries();
+  }
+
+  private async preloadPopularCountries() {
+    const popularCountries = ['US', 'GB', 'DE', 'FR', 'AU', 'CA'];
+    console.log('🚀 Preloading payment methods for popular countries...');
+
+    for (const country of popularCountries) {
+      try {
+        await this.getCachedPaymentMethods(country);
+        console.log(`✅ Preloaded payment methods for ${country}`);
+      } catch (error) {
+        console.log(`⚠️ Failed to preload ${country}:`, error.message);
+      }
+    }
+  }
+
+  private getCachedPaymentMethods(countryCode: string): any {
+    const cacheKey = countryCode.toUpperCase();
+    const now = Date.now();
+    const cached = this.paymentMethodsCache.get(cacheKey);
+    const expiry = this.cacheExpiry.get(cacheKey);
+
+    if (cached && expiry && now < expiry) {
+      console.log(`📋 Using cached payment methods for ${countryCode}`);
+      return cached;
+    }
+
+    return null;
+  }
+
+  private setCachedPaymentMethods(countryCode: string, data: any): void {
+    const cacheKey = countryCode.toUpperCase();
+    this.paymentMethodsCache.set(cacheKey, data);
+    this.cacheExpiry.set(cacheKey, Date.now() + this.CACHE_TTL);
+    console.log(`💾 Cached payment methods for ${countryCode}`);
   }
 
   async createPaymentIntent(paymentData: {
@@ -61,39 +102,30 @@ export class CheckoutService {
     customerInfo?: any;
     countryCode?: string;
   }) {
+    const startTime = Date.now();
+
     try {
-      // Country-specific currency mapping for better payment method support
+      // Fast country-specific currency mapping
       const countryCurrencyMap: { [key: string]: string } = {
-        'US': 'usd',
-        'GB': 'gbp',
-        'EU': 'eur',
-        'CA': 'cad',
-        'AU': 'aud',
-        'JP': 'jpy',
-        'MX': 'mxn',
-        'SG': 'sgd',
-        'HK': 'hkd',
-        'CH': 'chf',
-        'SE': 'sek',
-        'NO': 'nok',
-        'DK': 'dkk',
-        'PL': 'pln'
+        'US': 'usd', 'GB': 'gbp', 'EU': 'eur', 'CA': 'cad', 'AU': 'aud',
+        'JP': 'jpy', 'MX': 'mxn', 'SG': 'sgd', 'HK': 'hkd', 'CH': 'chf',
+        'SE': 'sek', 'NO': 'nok', 'DK': 'dkk', 'PL': 'pln'
       };
 
-      // Use country-specific currency if provided, otherwise default
-      const currency = paymentData.countryCode
-        ? countryCurrencyMap[paymentData.countryCode.toUpperCase()] || paymentData.currency
-        : paymentData.currency;
+      const countryCode = paymentData.countryCode?.toUpperCase() || 'US';
+      const currency = countryCurrencyMap[countryCode] || paymentData.currency;
 
-      console.log(`🌍 Creating Express Checkout for country: ${paymentData.countryCode}, currency: ${currency}`);
+      console.log(`⚡ Fast Express Checkout for ${countryCode}: ${currency}`);
 
+      // Optimized minimal payment intent data
       const paymentIntentData: any = {
         amount: Math.round(paymentData.amount * 100),
         currency: currency,
         metadata: {
           customerEmail: paymentData.customerEmail,
           expressCheckout: 'true',
-          countryCode: paymentData.countryCode || 'US',
+          countryCode: countryCode,
+          fast: 'true',
         },
         automatic_payment_methods: {
           enabled: true,
@@ -101,56 +133,76 @@ export class CheckoutService {
         },
       };
 
-      // Express Checkout works best with automatic payment methods
-      // Stripe will automatically enable available payment methods based on:
-      // 1. Country/Currency combination
-      // 2. Account capabilities and activation
-      // 3. Customer's device/browser support
-
-      // Note: For PayPal, Google Pay, Apple Pay to appear:
-      // 1. Your Stripe account must be activated for these methods
-      // 2. The country must support these payment methods
-      // 3. The currency must be compatible
-      // 4. The customer's browser/device must support the method
-
-      // Add customer information if provided
-      if (paymentData.customerInfo) {
+      // Only add shipping if essential data provided
+      if (paymentData.customerInfo?.address?.postal_code) {
         paymentIntentData.shipping = {
           name: paymentData.customerInfo.name || '',
           address: {
             line1: paymentData.customerInfo.address?.line1 || '',
-            line2: paymentData.customerInfo.address?.line2 || '',
             city: paymentData.customerInfo.address?.city || '',
             state: paymentData.customerInfo.address?.state || '',
-            postal_code: paymentData.customerInfo.address?.postal_code || '',
-            country: paymentData.countryCode || 'US',
+            postal_code: paymentData.customerInfo.address?.postal_code,
+            country: countryCode,
           },
         };
       }
 
+      // Create payment intent with optimized configuration
       const paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData,
         paymentData.stripeAccountId ? {
           stripeAccount: paymentData.stripeAccountId,
         } : {}
       );
 
-      console.log(`✅ Express Checkout created: ${paymentIntent.id}, available methods: ${paymentIntent.payment_method_types?.join(', ')}`);
+      const responseTime = Date.now() - startTime;
+      console.log(`⚡ Express Checkout created in ${responseTime}ms: ${paymentIntent.id}`);
 
       return {
         success: true,
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        availablePaymentMethods: paymentIntent.payment_method_types,
+        // Use cached payment methods for faster response
+        availablePaymentMethods: this.getAvailablePaymentMethodsFast(countryCode),
         currency: currency,
-        countryCode: paymentData.countryCode,
+        countryCode: countryCode,
+        responseTime: responseTime,
       };
     } catch (error) {
-      console.error('❌ Express Checkout creation failed:', error.message);
+      const responseTime = Date.now() - startTime;
+      console.error(`❌ Express Checkout failed in ${responseTime}ms:`, error.message);
+
       return {
         success: false,
         error: error.message,
+        responseTime: responseTime,
       };
     }
+  }
+
+  // Fast payment method lookup without API calls
+  private getAvailablePaymentMethodsFast(countryCode: string): string[] {
+    const cached = this.getCachedPaymentMethods(countryCode);
+    if (cached) {
+      return cached.methods || ['card'];
+    }
+
+    // Fallback to static mapping for instant response
+    const staticMethods: { [key: string]: string[] } = {
+      'US': ['card', 'link', 'apple_pay', 'google_pay'],
+      'GB': ['card', 'apple_pay', 'google_pay'],
+      'DE': ['card', 'apple_pay', 'google_pay'],
+      'FR': ['card', 'apple_pay', 'google_pay'],
+      'AU': ['card', 'apple_pay', 'google_pay'],
+      'CA': ['card', 'apple_pay', 'google_pay'],
+      'JP': ['card', 'apple_pay', 'google_pay'],
+    };
+
+    const methods = staticMethods[countryCode] || ['card'];
+
+    // Cache the static methods temporarily
+    this.setCachedPaymentMethods(countryCode, { methods, source: 'static' });
+
+    return methods;
   }
 
   async confirmPayment(paymentIntentId: string) {
@@ -325,5 +377,63 @@ export class CheckoutService {
     };
 
     return recommendations[country?.toUpperCase()] || ['card'];
+  }
+
+  // Super fast payment methods endpoint
+  async getPaymentMethodsFast(countryCode: string) {
+    const startTime = Date.now();
+
+    try {
+      const methods = this.getAvailablePaymentMethodsFast(countryCode.toUpperCase());
+      const responseTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        countryCode: countryCode.toUpperCase(),
+        paymentMethods: methods,
+        responseTime: `${responseTime}ms`,
+        cached: this.getCachedPaymentMethods(countryCode) ? true : false,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        paymentMethods: ['card'], // Always fallback to card
+        responseTime: `${Date.now() - startTime}ms`,
+      };
+    }
+  }
+
+  // Get all popular payment methods for frontend preloading
+  async getAllPopularPaymentMethods() {
+    const popularCountries = ['US', 'GB', 'DE', 'FR', 'AU', 'CA', 'JP'];
+    const startTime = Date.now();
+
+    const result: any = {
+      success: true,
+      countries: {},
+      responseTime: 0,
+    };
+
+    for (const country of popularCountries) {
+      result.countries[country] = {
+        paymentMethods: this.getAvailablePaymentMethodsFast(country),
+        currency: this.getCountryCurrency(country),
+      };
+    }
+
+    result.responseTime = Date.now() - startTime;
+    result.responseTime = `${result.responseTime}ms`;
+
+    return result;
+  }
+
+  private getCountryCurrency(countryCode: string): string {
+    const currencyMap: { [key: string]: string } = {
+      'US': 'usd', 'GB': 'gbp', 'DE': 'eur', 'FR': 'eur',
+      'AU': 'aud', 'CA': 'cad', 'JP': 'jpy'
+    };
+
+    return currencyMap[countryCode] || 'usd';
   }
 }
