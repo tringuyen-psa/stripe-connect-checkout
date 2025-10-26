@@ -234,16 +234,16 @@ export function StripeExpressCheckout({
               applePay: 'buy',
               googlePay: 'buy',
               paypal: 'buynow',
+              // Klarna button type not supported in TypeScript definitions
             },
             buttonTheme: {
               paypal: 'gold',
+              // Klarna theme not supported in TypeScript definitions
             },
             paymentMethods: {
               applePay: 'always',  // Force Apple Pay to show
-              cashapp: 'always',   // Force Cash App to show
-              paypal: {
-                custom: 'cpmt_1SM0OnGvqAVA71VqxYBxlHt5'  // Custom PayPal payment method
-              },
+              klarna: 'always',    // Force Klarna to show
+              // Remove custom PayPal for now - use standard PayPal
               // Other methods: let Stripe auto-detect
             } as any,
             emailRequired: true,
@@ -276,7 +276,7 @@ export function StripeExpressCheckout({
               console.log('✅ Available payment methods:', enabledMethods)
 
               // Log which payment methods fall into which category
-              const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link', 'cashapp']
+              const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link']
               const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
 
               const availableBuyNow = enabledMethods.filter(method =>
@@ -319,7 +319,10 @@ export function StripeExpressCheckout({
                 console.log('💰 Cash App: ✅ Available and ready')
               }
               if (enabledMethods.includes('paypal')) {
-                console.log('🅿️ PayPal (Custom): ✅ Available with custom payment method cpmt_1SM0OnGvqAVA71VqxYBxlHt5')
+                console.log('🅿️ PayPal: ✅ Available (standard payment method)')
+              }
+              if (enabledMethods.includes('klarna')) {
+                console.log('🛍️ Klarna: ✅ Available (Pay later option)')
               }
             }
           }}
