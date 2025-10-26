@@ -202,16 +202,33 @@ export function StripeExpressCheckout({
     <div className="space-y-3">
       <p className="text-sm font-semibold">Express checkout</p>
 
+      {/* Options Labels */}
+      <div className="flex justify-between items-center px-1">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+            <svg width="8" height="6" viewBox="0 0 8 6" fill="white">
+              <path d="M1 3L2.5 4.5L7 0.5" stroke="white" strokeWidth="1" fill="none"/>
+            </svg>
+          </div>
+          <span className="text-sm text-gray-700 font-medium">Buy now</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-gray-400 rounded-full flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+          </div>
+          <span className="text-sm text-gray-700 font-medium">Pay later</span>
+        </div>
+      </div>
+
       {clientSecret ? (
         <ExpressCheckoutElement
           options={{
             layout: {
-              maxColumns: 3,
-              maxRows: 2,
+              maxColumns: 4,
+              maxRows: 1,
               overflow: 'auto',
             },
             buttonHeight: 48,
-            // Configure specific button types for each payment method
             buttonType: {
               applePay: 'buy',
               googlePay: 'buy',
@@ -220,6 +237,10 @@ export function StripeExpressCheckout({
             buttonTheme: {
               paypal: 'gold',
             },
+            // paymentMethods configuration removed - using auto-detection
+            // Apple Pay requires domain verification: https://stripe.com/docs/payments/payment-methods/pmd-registration
+            // Google Pay requires HTTPS (development over HTTP won't show it)
+            // Let Stripe auto-detect available methods
             emailRequired: true,
           }}
           onConfirm={handleConfirm}
@@ -242,7 +263,41 @@ export function StripeExpressCheckout({
               console.warn('No payment methods available. Check Stripe Dashboard configuration.')
               onError('No payment methods are currently available. Please contact support.')
             } else {
-              console.log('Available payment methods:', Object.keys(availablePaymentMethods))
+              const availableMethods = Object.keys(availablePaymentMethods)
+              console.log('✅ Available payment methods:', availableMethods)
+
+              // Log which payment methods fall into which category
+              const buyNowMethods = ['apple_pay', 'google_pay', 'paypal', 'amazon_pay', 'link']
+              const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
+
+              const availableBuyNow = availableMethods.filter(method =>
+                buyNowMethods.includes(method)
+              )
+              const availablePayLater = availableMethods.filter(method =>
+                payLaterMethods.includes(method)
+              )
+
+              console.log('💳 Buy now methods:', availableBuyNow)
+              console.log('📅 Pay later methods:', availablePayLater)
+
+              // Development environment notes
+              console.log('📝 Development Notes:')
+              if (window.location.protocol === 'http:') {
+                console.log('⚠️  Running on HTTP - Google Pay and Apple Pay require HTTPS')
+                console.log('💡 To test Apple Pay: Visit https://stripe.com/docs/payments/payment-methods/pmd-registration')
+              }
+              if (!availableMethods.includes('apple_pay')) {
+                console.log('🍎 Apple Pay: Requires domain verification in Stripe Dashboard')
+              }
+              if (!availableMethods.includes('google_pay')) {
+                console.log('🔍 Google Pay: Requires HTTPS environment')
+              }
+              if (availableMethods.includes('amazon_pay')) {
+                console.log('🛒 Amazon Pay: ✅ Available')
+              }
+              if (availableMethods.includes('link')) {
+                console.log('🔗 Link: ✅ Available (Stripe\'s native payment method)')
+              }
             }
           }}
           onShippingAddressChange={(event) => {
