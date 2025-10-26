@@ -240,6 +240,10 @@ export function StripeExpressCheckout({
             },
             paymentMethods: {
               applePay: 'always',  // Force Apple Pay to show
+              cashapp: 'always',   // Force Cash App to show
+              paypal: {
+                custom: 'cpmt_1SM0OnGvqAVA71VqxYBxlHt5'  // Custom PayPal payment method
+              },
               // Other methods: let Stripe auto-detect
             } as any,
             emailRequired: true,
@@ -272,7 +276,7 @@ export function StripeExpressCheckout({
               console.log('✅ Available payment methods:', enabledMethods)
 
               // Log which payment methods fall into which category
-              const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link']
+              const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link', 'cashapp']
               const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
 
               const availableBuyNow = enabledMethods.filter(method =>
@@ -310,6 +314,12 @@ export function StripeExpressCheckout({
               }
               if (enabledMethods.includes('link')) {
                 console.log('🔗 Link: ✅ Available (Stripe\'s native payment method)')
+              }
+              if (enabledMethods.includes('cashapp')) {
+                console.log('💰 Cash App: ✅ Available and ready')
+              }
+              if (enabledMethods.includes('paypal')) {
+                console.log('🅿️ PayPal (Custom): ✅ Available with custom payment method cpmt_1SM0OnGvqAVA71VqxYBxlHt5')
               }
             }
           }}
