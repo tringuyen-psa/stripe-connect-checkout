@@ -12,15 +12,15 @@ async function createApp(express?: Express) {
     app = await NestFactory.create(AppModule, adapter);
 
     app.enableCors({
-      origin: '*',
-      credentials: false,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+      origin: true, // Cho phép tất cả origins
+      credentials: true, // Cho phép credentials
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      allowedHeaders: '*', // Cho phép tất cả headers
     });
 
     app.useGlobalPipes(new ValidationPipe({
       transform: true,
-      whitelist: false,
+      whitelist: true,
       forbidNonWhitelisted: false,
       skipMissingProperties: true,
     }));
