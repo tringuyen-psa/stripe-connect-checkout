@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { Express } from 'express';
@@ -27,10 +28,25 @@ async function createApp(express?: Express) {
 
     app.setGlobalPrefix('api');
 
+    // Swagger documentation setup
+    const config = new DocumentBuilder()
+      .setTitle('Stripe Connect Checkout API')
+      .setDescription('API documentation for Stripe Connect payment processing')
+      .setVersion('1.0')
+      .addTag('checkout', 'Payment checkout endpoints')
+      .addTag('webhooks', 'Stripe webhook handlers')
+      .addTag('health', 'Health check endpoints')
+      .addBearerAuth()
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api-docs', app, document);
+
     if (!express) {
       const port = process.env.PORT || 29000;
       await app.listen(port);
       console.log(`✅ App running on: http://localhost:${port}`);
+      console.log(`📚 Swagger docs at: http://localhost:${port}/api-docs`);
     } else {
       await app.init();
     }
