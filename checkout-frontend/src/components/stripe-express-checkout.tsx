@@ -224,11 +224,12 @@ export function StripeExpressCheckout({
         <ExpressCheckoutElement
           options={{
             layout: {
-              maxColumns: 4,
-              maxRows: 1,
+              maxColumns: 3,
+              maxRows: 2,
               overflow: 'auto',
             },
             buttonHeight: 48,
+            // Configure specific button types for each payment method
             buttonType: {
               applePay: 'buy',
               googlePay: 'buy',
@@ -237,10 +238,10 @@ export function StripeExpressCheckout({
             buttonTheme: {
               paypal: 'gold',
             },
-            // paymentMethods configuration removed - using auto-detection
-            // Apple Pay requires domain verification: https://stripe.com/docs/payments/payment-methods/pmd-registration
-            // Google Pay requires HTTPS (development over HTTP won't show it)
-            // Let Stripe auto-detect available methods
+            paymentMethods: {
+              applePay: 'always',  // Force Apple Pay to show
+              // Other methods: let Stripe auto-detect
+            } as any,
             emailRequired: true,
           }}
           onConfirm={handleConfirm}
@@ -263,39 +264,51 @@ export function StripeExpressCheckout({
               console.warn('No payment methods available. Check Stripe Dashboard configuration.')
               onError('No payment methods are currently available. Please contact support.')
             } else {
-              const availableMethods = Object.keys(availablePaymentMethods)
-              console.log('✅ Available payment methods:', availableMethods)
+              // Filter for payment methods that are actually available (true value)
+              const enabledMethods = Object.entries(availablePaymentMethods)
+                .filter(([_, isAvailable]) => isAvailable === true)
+                .map(([method]) => method)
+
+              console.log('✅ Available payment methods:', enabledMethods)
 
               // Log which payment methods fall into which category
-              const buyNowMethods = ['apple_pay', 'google_pay', 'paypal', 'amazon_pay', 'link']
+              const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link']
               const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
 
-              const availableBuyNow = availableMethods.filter(method =>
+              const availableBuyNow = enabledMethods.filter(method =>
                 buyNowMethods.includes(method)
               )
-              const availablePayLater = availableMethods.filter(method =>
+              const availablePayLater = enabledMethods.filter(method =>
                 payLaterMethods.includes(method)
               )
 
               console.log('💳 Buy now methods:', availableBuyNow)
               console.log('📅 Pay later methods:', availablePayLater)
 
+              // Detailed status for each payment method
+              console.log('📊 Payment Method Status:')
+              Object.entries(availablePaymentMethods).forEach(([method, isAvailable]) => {
+                const status = isAvailable ? '✅ Available' : '❌ Unavailable'
+                const category = buyNowMethods.includes(method) ? '💳' :
+                               payLaterMethods.includes(method) ? '📅' : '❓'
+                console.log(`${category} ${method}: ${status}`)
+              })
+
               // Development environment notes
               console.log('📝 Development Notes:')
               if (window.location.protocol === 'http:') {
                 console.log('⚠️  Running on HTTP - Google Pay and Apple Pay require HTTPS')
-                console.log('💡 To test Apple Pay: Visit https://stripe.com/docs/payments/payment-methods/pmd-registration')
               }
-              if (!availableMethods.includes('apple_pay')) {
-                console.log('🍎 Apple Pay: Requires domain verification in Stripe Dashboard')
+              if (!enabledMethods.includes('applePay') && availablePaymentMethods.applePay === false) {
+                console.log('🍎 Apple Pay: ❌ Not available (domain verification may be needed)')
               }
-              if (!availableMethods.includes('google_pay')) {
-                console.log('🔍 Google Pay: Requires HTTPS environment')
+              if (!enabledMethods.includes('googlePay') && availablePaymentMethods.googlePay === false) {
+                console.log('🔍 Google Pay: ❌ Not available (requires HTTPS environment)')
               }
-              if (availableMethods.includes('amazon_pay')) {
-                console.log('🛒 Amazon Pay: ✅ Available')
+              if (enabledMethods.includes('amazonPay')) {
+                console.log('🛒 Amazon Pay: ✅ Available and ready')
               }
-              if (availableMethods.includes('link')) {
+              if (enabledMethods.includes('link')) {
                 console.log('🔗 Link: ✅ Available (Stripe\'s native payment method)')
               }
             }
