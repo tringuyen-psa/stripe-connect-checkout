@@ -6,6 +6,7 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
