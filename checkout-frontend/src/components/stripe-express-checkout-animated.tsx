@@ -8,8 +8,7 @@ import { useProducts } from "@/context/ProductContext"
 import {
     AppleIcon,
     ChromeIcon,
-    CreditCardIcon,
-    WalletIcon
+    CreditCardIcon
 } from "lucide-react"
 
 interface WalletOption {
@@ -35,14 +34,7 @@ const walletOptions: WalletOption[] = [
         color: 'blue',
         description: 'Pay with Google Pay'
     },
-    {
-        id: 'paypal',
-        name: 'PayPal',
-        icon: <WalletIcon className="w-5 h-5" />,
-        color: 'yellow',
-        description: 'Pay with PayPal'
-    },
-    {
+      {
         id: 'card',
         name: 'Credit Card',
         icon: <CreditCardIcon className="w-5 h-5" />,
@@ -293,7 +285,6 @@ export function AnimatedExpressCheckout({
                                     const colorMap: { [key: string]: string } = {
                                         'apple-pay': 'ring-green-500',
                                         'google-pay': 'ring-blue-500',
-                                        'paypal': 'ring-yellow-500',
                                         'card': 'ring-gray-500'
                                     }
                                     button.classList.add(colorMap[wallet.id] || 'ring-blue-500')

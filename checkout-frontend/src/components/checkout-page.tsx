@@ -14,7 +14,7 @@ import { apiClient } from "@/lib/api"
 import { useStripe } from '@stripe/react-stripe-js'
 import { useProducts } from "@/context/ProductContext"
 import { useRef } from 'react'
-import { countryList } from "@/lib/countries"
+import { countryList, getStatesByCountry, Country, State } from "@/lib/countries"
 
 interface CheckoutPageProps {
     clientSecret?: string
@@ -30,11 +30,42 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
     const [address, setAddress] = useState("123 Main Street")
     const [apartment, setApartment] = useState("")
     const [city, setCity] = useState("Los Angeles")
-    const [state, setState] = useState("California")
+    const [selectedState, setSelectedState] = useState("California")
     const [zipCode, setZipCode] = useState("90210")
     const [phone, setPhone] = useState("+1 (555) 123-4567")
-    const [country, setCountry] = useState("United States")
+    const [selectedCountry, setSelectedCountry] = useState<Country>(countryList.find(c => c.name === "United States") || countryList[0])
     const [newsletter, setNewsletter] = useState(true)
+
+    // Handle country change and reset state
+    const handleCountryChange = (countryName: string) => {
+        const country = countryList.find(c => c.name === countryName)
+        if (country) {
+            setSelectedCountry(country)
+            // Reset state when country changes
+            setSelectedState("")
+        }
+        clearError()
+    }
+
+    const handleStateChange = (stateName: string) => {
+        setSelectedState(stateName)
+        clearError()
+    }
+
+    // Phone number formatting
+    const handlePhoneChange = (value: string) => {
+        // Allow international phone formats with +, digits, spaces, dashes, parentheses
+        setPhone(value)
+        clearError()
+    }
+
+    // ZIP code formatting
+    const handleZipCodeChange = (value: string) => {
+        // Format for international postal codes
+        const formatted = value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '')
+        setZipCode(formatted)
+        clearError()
+    }
     const [smsUpdates, setSmsUpdates] = useState(true)
     const [paymentMethod, setPaymentMethod] = useState("credit-card")
     const [saveInfo, setSaveInfo] = useState(true)
@@ -43,7 +74,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
     // Payment states
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentError, setPaymentError] = useState<string | null>(null)
-    const [stripePaymentMethod, setStripePaymentMethod] = useState<{ id: string; card: any } | null>(null)
 
     const validateCardInformation = async () => {
         if (!cardInputRef.current) {
@@ -84,69 +114,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
         setPaymentError(error)
     }
 
-    // Handle PayPal success
-    const handlePayPalSuccess = async (paymentIntentId: string) => {
-        try {
-            // Create order with PayPal payment
-            const orderItems = products.map(product => ({
-                name: product.name,
-                price: product.price,
-                quantity: product.quantity
-            }))
-
-            const orderResponse = await apiClient.createOrder({
-                paymentIntentId: paymentIntentId,
-                items: orderItems,
-                customer: {
-                    email,
-                    firstName,
-                    lastName,
-                    phone,
-                    address: `${address}${apartment ? `, ${apartment}` : ''}`,
-                    city,
-                    country: 'United States',
-                    postalCode: zipCode,
-                },
-                subtotal: getOrderTotal(),
-                tax: 0,
-                shipping: 0,
-                total: getOrderTotal(),
-                currency: 'usd',
-                paymentMethodId: paymentIntentId,
-                isExpressCheckout: false
-            })
-
-            if (orderResponse.error) {
-                throw new Error(orderResponse.error || 'Failed to create order')
-            }
-
-            // Redirect to success page with PayPal payment details
-            const orderId = (orderResponse.data as any)?.id
-
-            const params = new URLSearchParams({
-                orderId: orderId || 'unknown',
-                paymentId: paymentIntentId || 'unknown',
-                amount: getOrderTotal().toString(),
-                currency: 'usd',
-                status: 'completed',
-                email: email,
-                paymentMethod: 'paypal'
-            })
-
-            window.location.href = '/success?' + params.toString()
-
-        } catch (error) {
-            console.error('PayPal order creation error:', error)
-            setPaymentError(error instanceof Error ? error.message : 'Failed to create order after PayPal payment')
-        }
-    }
-
-    // Handle PayPal error
-    const handlePayPalError = (error: string) => {
-        setPaymentError(error)
-    }
-
-
     const handlePlaceOrder = async () => {
         // Check for missing required fields
         const missingFields = []
@@ -157,6 +124,11 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
         if (!city) missingFields.push("City")
         if (!zipCode) missingFields.push("ZIP code")
         if (!phone) missingFields.push("Phone")
+
+        // Add state validation for countries that have states
+        if (selectedCountry.states && selectedCountry.states.length > 0 && !selectedState) {
+            missingFields.push("State")
+        }
 
         if (missingFields.length > 0) {
             setPaymentError(`Please fill in the following required fields: ${missingFields.join(", ")}`)
@@ -175,7 +147,8 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                 return
             }
             console.log('Setting Stripe payment method:', paymentMethodData.id)
-            setStripePaymentMethod(paymentMethodData)
+            // Payment method set
+            console.log('Payment method ready:', paymentMethodData.id)
         }
 
         if (products.length === 0) {
@@ -238,7 +211,8 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                         phone,
                         address: `${address}${apartment ? `, ${apartment}` : ''}`,
                         city,
-                        country: 'United States',
+                        state: selectedState,
+                        country: selectedCountry.name,
                         postalCode: zipCode,
                     },
                     subtotal: getOrderTotal(),
@@ -268,9 +242,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                 })
 
                 window.location.href = '/success?' + params.toString()
-            } else if (paymentMethod === 'paypal') {
-                // PayPal is handled through the PayPal button
-                setPaymentError("Please use the PayPal button above to complete your payment.")
             } else {
                 // Handle other payment methods (Shop Pay, etc.)
                 setPaymentError("This payment method is not implemented yet.")
@@ -317,9 +288,9 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         line1: address,
                                         line2: apartment || undefined,
                                         city: city,
-                                        state: state,
+                                        state: selectedState,
                                         postal_code: zipCode,
-                                        country: country
+                                        country: selectedCountry.name
                                     }
                                 }}
                                 onSuccess={handleExpressCheckoutSuccess}
@@ -369,10 +340,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h2 className="text-lg font-semibold mb-4">Delivery</h2>
                             <div className="space-y-4">
-                                <Select value={country} onValueChange={(value) => {
-                                    setCountry(value)
-                                    clearError()
-                                }}>
+                                <Select value={selectedCountry.name} onValueChange={handleCountryChange}>
                                     <SelectTrigger className="border-gray-300">
                                         <SelectValue placeholder="Select country" />
                                     </SelectTrigger>
@@ -417,7 +385,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 />
 
                                 <Input
-                                    placeholder="Apartment, suite, etc. (optional)"
+                                    placeholder="Apartment, suite, unit, etc. (optional)"
                                     value={apartment}
                                     onChange={(e) => setApartment(e.target.value)}
                                     className="border-gray-300"
@@ -433,35 +401,34 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         }}
                                         className="border-gray-300"
                                     />
-                                    <Select value={state} onValueChange={setState}>
+                                    <Select value={selectedState} onValueChange={handleStateChange}>
                                         <SelectTrigger className="border-gray-300">
-                                            <SelectValue placeholder="State" />
+                                            <SelectValue placeholder="State/Province" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="California">California</SelectItem>
-                                            <SelectItem value="Texas">Texas</SelectItem>
-                                            <SelectItem value="Florida">Florida</SelectItem>
-                                            <SelectItem value="New York">New York</SelectItem>
+                                            {selectedCountry.states ? (
+                                                selectedCountry.states.map((state) => (
+                                                    <SelectItem key={state.code} value={state.name}>
+                                                        {state.name}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="">No states available</SelectItem>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <Input
-                                        placeholder="ZIP code"
+                                        placeholder="ZIP/Postal code"
                                         value={zipCode}
-                                        onChange={(e) => {
-                                            setZipCode(e.target.value)
-                                            clearError()
-                                        }}
+                                        onChange={(e) => handleZipCodeChange(e.target.value)}
                                         className="border-gray-300"
                                     />
                                 </div>
 
                                 <Input
-                                    placeholder="Phone"
+                                    placeholder="Phone number (include country code)"
                                     value={phone}
-                                    onChange={(e) => {
-                                        setPhone(e.target.value)
-                                        clearError()
-                                    }}
+                                    onChange={(e) => handlePhoneChange(e.target.value)}
                                     className="border-gray-300"
                                 />
 
@@ -498,11 +465,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 cardRef={cardInputRef}
                                 isProcessing={isProcessing}
                                 paymentError={paymentError}
-                                clientSecret={clientSecret}
-                                onPayPalSuccess={handlePayPalSuccess}
-                                onPayPalError={handlePayPalError}
-                                orderAmount={getOrderTotal()}
-                                customerEmail={email}
                             />
                         </div>
 
@@ -536,15 +498,13 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                             className="w-full h-14 text-base font-semibold text-white"
                             style={{ backgroundColor: '#1a5f3f', borderRadius: '6px' }}
                             onClick={handlePlaceOrder}
-                            disabled={isProcessing || getOrderTotal() === 0 || paymentMethod === 'paypal'}
+                            disabled={isProcessing || getOrderTotal() === 0}
                         >
                             {isProcessing ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     Processing...
                                 </div>
-                            ) : paymentMethod === 'paypal' ? (
-                                'Complete payment with PayPal button above'
                             ) : (
                                 `Place Order • $${getOrderTotal().toFixed(2)}`
                             )}

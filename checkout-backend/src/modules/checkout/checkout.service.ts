@@ -203,11 +203,11 @@ export class CheckoutService {
     if (isTestMode || isDevelopment) {
       // In development/test mode, return more payment methods for testing
       const testMethods: { [key: string]: string[] } = {
-        'US': ['card', 'link', 'apple_pay', 'google_pay', 'paypal', 'klarna', 'afterpay_clearpay'],
-        'GB': ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna'],
-        'DE': ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna'],
-        'FR': ['card', 'apple_pay', 'google_pay', 'paypal'],
-        'AU': ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna'],
+        'US': ['card', 'link', 'apple_pay', 'google_pay', 'klarna', 'afterpay_clearpay'],
+        'GB': ['card', 'apple_pay', 'google_pay', 'klarna'],
+        'DE': ['card', 'apple_pay', 'google_pay', 'klarna'],
+        'FR': ['card', 'apple_pay', 'google_pay'],
+        'AU': ['card', 'apple_pay', 'google_pay', 'klarna'],
         'CA': ['card', 'apple_pay', 'google_pay', 'afterpay_clearpay'],
         'JP': ['card', 'apple_pay', 'google_pay'],
       };
@@ -347,7 +347,6 @@ export class CheckoutService {
       // Test different payment method types
       const paymentMethodTests = [
         { type: 'card', name: 'Credit/Debit Card' },
-        { type: 'paypal', name: 'PayPal' },
         { type: 'apple_pay', name: 'Apple Pay' },
         { type: 'google_pay', name: 'Google Pay' },
         { type: 'klarna', name: 'Klarna' },
@@ -398,7 +397,6 @@ export class CheckoutService {
   private isPaymentMethodSupported(paymentMethod: string, country?: string): boolean {
     // Payment method country support matrix
     const supportMatrix: { [key: string]: string[] } = {
-      'paypal': ['US', 'GB', 'DE', 'FR', 'IT', 'ES', 'AU', 'CA', 'NL', 'BE', 'AT'],
       'apple_pay': ['US', 'GB', 'CA', 'AU', 'JP', 'SG', 'HK', 'FR', 'DE', 'IT', 'ES', 'NL'],
       'google_pay': ['US', 'GB', 'CA', 'AU', 'JP', 'SG', 'HK', 'FR', 'DE', 'IT', 'ES', 'NL', 'BR', 'PL'],
       'klarna': ['US', 'GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'FI', 'NO', 'SE', 'DK'],
@@ -410,11 +408,11 @@ export class CheckoutService {
 
   private getPaymentMethodRecommendations(country?: string): string[] {
     const recommendations: { [key: string]: string[] } = {
-      'US': ['card', 'paypal', 'apple_pay', 'google_pay', 'klarna', 'afterpay_clearpay'],
-      'GB': ['card', 'paypal', 'apple_pay', 'google_pay', 'klarna'],
-      'DE': ['card', 'paypal', 'apple_pay', 'google_pay', 'klarna', 'sepa_debit'],
-      'FR': ['card', 'paypal', 'apple_pay', 'google_pay'],
-      'AU': ['card', 'paypal', 'apple_pay', 'google_pay', 'afterpay_clearpay'],
+      'US': ['card', 'apple_pay', 'google_pay', 'klarna', 'afterpay_clearpay'],
+      'GB': ['card', 'apple_pay', 'google_pay', 'klarna'],
+      'DE': ['card', 'apple_pay', 'google_pay', 'klarna', 'sepa_debit'],
+      'FR': ['card', 'apple_pay', 'google_pay'],
+      'AU': ['card', 'apple_pay', 'google_pay', 'afterpay_clearpay'],
       'CA': ['card', 'apple_pay', 'google_pay', 'afterpay_clearpay'],
       'JP': ['card', 'apple_pay', 'google_pay', 'konbini'],
     };

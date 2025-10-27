@@ -220,17 +220,14 @@ export function StripeExpressCheckout({
                 buttonType: {
                   applePay: 'buy',
                   googlePay: 'buy',
-                  paypal: 'buynow',
                   // Klarna button type not supported in TypeScript definitions
                 },
-                buttonTheme: {
-                  paypal: 'gold',
-                  // Klarna theme not supported in TypeScript definitions
-                },
+                // buttonTheme: {
+                //   // Klarna theme not supported in TypeScript definitions
+                // },
                 paymentMethods: {
                   applePay: 'auto',    // Let Stripe auto-detect based on device
                   klarna: 'auto',      // Let Stripe auto-detect based on eligibility
-                  paypal: 'auto',      // Let Stripe auto-detect
                   link: 'auto',        // Let Stripe auto-detect
                   // Other methods: let Stripe auto-detect
                 },
@@ -264,7 +261,7 @@ export function StripeExpressCheckout({
                   console.log('✅ Available payment methods:', enabledMethods)
 
                   // Log which payment methods fall into which category
-                  const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link']
+                  const buyNowMethods = ['applePay', 'googlePay', 'amazonPay', 'link']
                   const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
 
                   const availableBuyNow = enabledMethods.filter(method =>
@@ -306,10 +303,7 @@ export function StripeExpressCheckout({
                   if (enabledMethods.includes('cashapp')) {
                     console.log('💰 Cash App: ✅ Available and ready')
                   }
-                  if (enabledMethods.includes('paypal')) {
-                    console.log('🅿️ PayPal: ✅ Available (standard payment method)')
-                  }
-                  if (enabledMethods.includes('klarna')) {
+                    if (enabledMethods.includes('klarna')) {
                     console.log('🛍️ Klarna: ✅ Available (Pay later option)')
                   }
                 }

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { StripeCardInput } from "./stripe-card-input"
-import { PayPalPaymentButton } from "./paypal-payment-button"
 
 interface PaymentMethodsProps {
     paymentMethod: string
@@ -15,8 +14,6 @@ interface PaymentMethodsProps {
     onValidateCard?: () => Promise<any>
     cardRef?: React.RefObject<any>
     clientSecret?: string
-    onPayPalSuccess?: (paymentIntentId: string) => void
-    onPayPalError?: (error: string) => void
     orderAmount?: number
     customerEmail?: string
 }
@@ -29,8 +26,6 @@ export function PaymentMethods({
     onValidateCard,
     cardRef,
     clientSecret,
-    onPayPalSuccess,
-    onPayPalError,
     orderAmount,
     customerEmail
 }: PaymentMethodsProps) {
@@ -137,45 +132,6 @@ export function PaymentMethods({
                     </label>
                 </div>
             )}
-
-            {/* PayPal */}
-            <div
-                className={`border rounded-lg ${paymentMethod === "paypal" ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                    }`}
-            >
-                <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="paypal" id="paypal" />
-                                    <label htmlFor="paypal" className="cursor-pointer font-semibold text-sm">
-                                        PayPal
-                                    </label>
-                                </div>
-                            </RadioGroup>
-                        </div>
-                        <div className="flex items-center">
-                            <svg width="80" height="24" viewBox="0 0 80 24" fill="none">
-                                <text x="0" y="18" fontSize="16" fontWeight="bold" fill="#003087">PayPal</text>
-                            </svg>
-                        </div>
-                    </div>
-
-                    {paymentMethod === "paypal" && (
-                        <div className="mt-4">
-                            <PayPalPaymentButton
-                                clientSecret={clientSecret}
-                                onSuccess={onPayPalSuccess}
-                                onError={onPayPalError}
-                                disabled={isProcessing}
-                                amount={orderAmount}
-                                customerEmail={customerEmail}
-                            />
-                        </div>
-                    )}
-                </div>
-            </div>
 
             {/* Shop Pay */}
             {/* <div

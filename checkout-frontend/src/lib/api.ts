@@ -32,7 +32,7 @@ class ApiClient {
         return {
           data: {
             clientSecret: 'pi_mock_client_secret_for_development_testing_' + Date.now(),
-            availablePaymentMethods: ['applePay', 'googlePay', 'paypal', 'link']
+            availablePaymentMethods: ['applePay', 'googlePay', 'link']
           } as T
         };
       }
@@ -123,6 +123,7 @@ class ApiClient {
       phone: string;
       address: string;
       city: string;
+      state?: string;
       country: string;
       postalCode: string;
     };
@@ -220,7 +221,7 @@ class ApiClient {
     amount: number;
     currency: string;
     customerEmail: string;
-    paymentMethod?: 'apple-pay' | 'google-pay' | 'paypal' | 'link' | 'klarna' | 'amazon-pay' | 'afterpay-clearpay' | 'cashapp' | 'alipay' | 'wechat-pay';
+    paymentMethod?: 'apple-pay' | 'google-pay' | 'link' | 'klarna' | 'amazon-pay' | 'afterpay-clearpay' | 'cashapp' | 'alipay' | 'wechat-pay';
     stripeAccountId?: string;
     countryCode?: string;
     customerInfo?: {

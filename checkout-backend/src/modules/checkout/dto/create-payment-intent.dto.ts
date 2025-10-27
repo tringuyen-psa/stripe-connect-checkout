@@ -123,7 +123,7 @@ export class CreatePaymentMethodDto {
   @ApiProperty({
     description: 'Payment method type',
     example: 'card',
-    enum: ['card', 'paypal', 'apple_pay', 'google_pay'],
+    enum: ['card', 'apple_pay', 'google_pay'],
   })
   @IsString()
   type: string;

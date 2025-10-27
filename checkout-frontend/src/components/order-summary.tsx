@@ -119,23 +119,23 @@ export function OrderSummary() {
                 </div>
             </div>
 
-            {/* Add to Subscription */}
-            <div className="mb-6 pb-6 border-b border-gray-200">
-                <h3 className="font-semibold text-sm mb-3">Add to your subscription</h3>
-                <div className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
-                    <div>
-                        <p className="font-semibold text-sm">AG Omega3</p>
-                        <p className="text-xs text-gray-500">$39.00</p>
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-gray-300 hover:bg-white"
-                    >
-                        Remove
-                    </Button>
-                </div>
-            </div>
+            {/* Add to Subscription
+            // <div className="mb-6 pb-6 border-b border-gray-200">
+            //     <h3 className="font-semibold text-sm mb-3">Add to your subscription</h3>
+            //     <div className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
+            //         <div>
+            //             <p className="font-semibold text-sm">AG Omega3</p>
+            //             <p className="text-xs text-gray-500">$39.00</p>
+            //         </div>
+            //         <Button
+            //             variant="outline"
+            //             size="sm"
+            //             className="border-gray-300 hover:bg-white"
+            //         >
+            //             Remove
+            //         </Button>
+            //     </div>
+            // </div> */}
 
             {/* Add to Order */}
             {/* <div className="mb-6 pb-6 border-b border-gray-200">
