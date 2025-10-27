@@ -201,132 +201,145 @@ export function StripeExpressCheckout({
         </div>
       </div>
 
-      {clientSecret ? (
-        <ExpressCheckoutElement
-          options={{
-            layout: {
-              maxColumns: 3,
-              maxRows: 2,
-              overflow: 'auto',
-            },
-            buttonHeight: 48,
-            // Configure specific button types for each payment method
-            buttonType: {
-              applePay: 'buy',
-              googlePay: 'buy',
-              paypal: 'buynow',
-              // Klarna button type not supported in TypeScript definitions
-            },
-            buttonTheme: {
-              paypal: 'gold',
-              // Klarna theme not supported in TypeScript definitions
-            },
-            paymentMethods: {
-              applePay: 'auto',    // Let Stripe auto-detect based on device
-              klarna: 'auto',      // Let Stripe auto-detect based on eligibility
-              paypal: 'auto',      // Let Stripe auto-detect
-              link: 'auto',        // Let Stripe auto-detect
-              // Other methods: let Stripe auto-detect
-            },
-            emailRequired: true,
-          }}
-          onConfirm={handleConfirm}
-          onCancel={() => {
-            console.log('Payment cancelled by user')
-            // Optionally show a message or log the cancellation
-          }}
-          onLoadError={(error) => {
-            logStripeError(error, 'Express Checkout load error')
-            // Filter out browser extension communication errors
-            if (error.error && error.error.message && isExtensionError(error.error)) {
-              return
-            }
-            onError('Failed to load payment options. Please refresh the page.')
-          }}
-          onReady={({ availablePaymentMethods }) => {
-            console.log('Express Checkout ready with methods:', availablePaymentMethods)
-            // According to migration guide, check available payment methods
-            if (!availablePaymentMethods || Object.keys(availablePaymentMethods).length === 0) {
-              console.warn('No payment methods available. Check Stripe Dashboard configuration.')
-              onError('No payment methods are currently available. Please contact support.')
-            } else {
-              // Filter for payment methods that are actually available (true value)
-              const enabledMethods = Object.entries(availablePaymentMethods)
-                .filter(([_, isAvailable]) => isAvailable === true)
-                .map(([method]) => method)
+      <div className="relative">
+        {clientSecret ? (
+          <div className={loading ? "opacity-50 pointer-events-none" : ""}>
+            <ExpressCheckoutElement
+              options={{
+                layout: {
+                  maxColumns: 3,
+                  maxRows: 2,
+                  overflow: 'auto',
+                },
+                buttonHeight: 48,
+                // Configure specific button types for each payment method
+                buttonType: {
+                  applePay: 'buy',
+                  googlePay: 'buy',
+                  paypal: 'buynow',
+                  // Klarna button type not supported in TypeScript definitions
+                },
+                buttonTheme: {
+                  paypal: 'gold',
+                  // Klarna theme not supported in TypeScript definitions
+                },
+                paymentMethods: {
+                  applePay: 'auto',    // Let Stripe auto-detect based on device
+                  klarna: 'auto',      // Let Stripe auto-detect based on eligibility
+                  paypal: 'auto',      // Let Stripe auto-detect
+                  link: 'auto',        // Let Stripe auto-detect
+                  // Other methods: let Stripe auto-detect
+                },
+                emailRequired: true,
+              }}
+              onConfirm={handleConfirm}
+              onCancel={() => {
+                console.log('Payment cancelled by user')
+                // Optionally show a message or log the cancellation
+              }}
+              onLoadError={(error) => {
+                logStripeError(error, 'Express Checkout load error')
+                // Filter out browser extension communication errors
+                if (error.error && error.error.message && isExtensionError(error.error)) {
+                  return
+                }
+                onError('Failed to load payment options. Please refresh the page.')
+              }}
+              onReady={({ availablePaymentMethods }) => {
+                console.log('Express Checkout ready with methods:', availablePaymentMethods)
+                // According to migration guide, check available payment methods
+                if (!availablePaymentMethods || Object.keys(availablePaymentMethods).length === 0) {
+                  console.warn('No payment methods available. Check Stripe Dashboard configuration.')
+                  onError('No payment methods are currently available. Please contact support.')
+                } else {
+                  // Filter for payment methods that are actually available (true value)
+                  const enabledMethods = Object.entries(availablePaymentMethods)
+                    .filter(([_, isAvailable]) => isAvailable === true)
+                    .map(([method]) => method)
 
-              console.log('✅ Available payment methods:', enabledMethods)
+                  console.log('✅ Available payment methods:', enabledMethods)
 
-              // Log which payment methods fall into which category
-              const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link']
-              const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
+                  // Log which payment methods fall into which category
+                  const buyNowMethods = ['applePay', 'googlePay', 'paypal', 'amazonPay', 'link']
+                  const payLaterMethods = ['klarna', 'afterpay', 'affirm', 'clearpay']
 
-              const availableBuyNow = enabledMethods.filter(method =>
-                buyNowMethods.includes(method)
-              )
-              const availablePayLater = enabledMethods.filter(method =>
-                payLaterMethods.includes(method)
-              )
+                  const availableBuyNow = enabledMethods.filter(method =>
+                    buyNowMethods.includes(method)
+                  )
+                  const availablePayLater = enabledMethods.filter(method =>
+                    payLaterMethods.includes(method)
+                  )
 
-              console.log('💳 Buy now methods:', availableBuyNow)
-              console.log('📅 Pay later methods:', availablePayLater)
+                  console.log('💳 Buy now methods:', availableBuyNow)
+                  console.log('📅 Pay later methods:', availablePayLater)
 
-              // Detailed status for each payment method
-              console.log('📊 Payment Method Status:')
-              Object.entries(availablePaymentMethods).forEach(([method, isAvailable]) => {
-                const status = isAvailable ? '✅ Available' : '❌ Unavailable'
-                const category = buyNowMethods.includes(method) ? '💳' :
-                               payLaterMethods.includes(method) ? '📅' : '❓'
-                console.log(`${category} ${method}: ${status}`)
-              })
+                  // Detailed status for each payment method
+                  console.log('📊 Payment Method Status:')
+                  Object.entries(availablePaymentMethods).forEach(([method, isAvailable]) => {
+                    const status = isAvailable ? '✅ Available' : '❌ Unavailable'
+                    const category = buyNowMethods.includes(method) ? '💳' :
+                                   payLaterMethods.includes(method) ? '📅' : '❓'
+                    console.log(`${category} ${method}: ${status}`)
+                  })
 
-              // Development environment notes
-              console.log('📝 Development Notes:')
-              if (window.location.protocol === 'http:') {
-                console.log('⚠️  Running on HTTP - Google Pay and Apple Pay require HTTPS')
-              }
-              if (!enabledMethods.includes('applePay') && availablePaymentMethods.applePay === false) {
-                console.log('🍎 Apple Pay: ❌ Not available (domain verification may be needed)')
-              }
-              if (!enabledMethods.includes('googlePay') && availablePaymentMethods.googlePay === false) {
-                console.log('🔍 Google Pay: ❌ Not available (requires HTTPS environment)')
-              }
-              if (enabledMethods.includes('amazonPay')) {
-                console.log('🛒 Amazon Pay: ✅ Available and ready')
-              }
-              if (enabledMethods.includes('link')) {
-                console.log('🔗 Link: ✅ Available (Stripe\'s native payment method)')
-              }
-              if (enabledMethods.includes('cashapp')) {
-                console.log('💰 Cash App: ✅ Available and ready')
-              }
-              if (enabledMethods.includes('paypal')) {
-                console.log('🅿️ PayPal: ✅ Available (standard payment method)')
-              }
-              if (enabledMethods.includes('klarna')) {
-                console.log('🛍️ Klarna: ✅ Available (Pay later option)')
-              }
-            }
-          }}
-          onShippingAddressChange={(event) => {
-            // Handle shipping address changes if needed
-            console.log('Shipping address changed:', event)
-          }}
-          onShippingRateChange={(event) => {
-            // Handle shipping rate changes if needed
-            console.log('Shipping rate changed:', event)
-          }}
-        />
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <Button disabled className="h-12 opacity-50">
-            <div className="w-4 h-4 bg-gray-300 rounded animate-pulse mx-auto" />
-          </Button>
-          <Button disabled className="h-12 opacity-50">
-            <div className="w-4 h-4 bg-gray-300 rounded animate-pulse mx-auto" />
-          </Button>
-        </div>
-      )}
+                  // Development environment notes
+                  console.log('📝 Development Notes:')
+                  if (window.location.protocol === 'http:') {
+                    console.log('⚠️  Running on HTTP - Google Pay and Apple Pay require HTTPS')
+                  }
+                  if (!enabledMethods.includes('applePay') && availablePaymentMethods.applePay === false) {
+                    console.log('🍎 Apple Pay: ❌ Not available (domain verification may be needed)')
+                  }
+                  if (!enabledMethods.includes('googlePay') && availablePaymentMethods.googlePay === false) {
+                    console.log('🔍 Google Pay: ❌ Not available (requires HTTPS environment)')
+                  }
+                  if (enabledMethods.includes('amazonPay')) {
+                    console.log('🛒 Amazon Pay: ✅ Available and ready')
+                  }
+                  if (enabledMethods.includes('link')) {
+                    console.log('🔗 Link: ✅ Available (Stripe\'s native payment method)')
+                  }
+                  if (enabledMethods.includes('cashapp')) {
+                    console.log('💰 Cash App: ✅ Available and ready')
+                  }
+                  if (enabledMethods.includes('paypal')) {
+                    console.log('🅿️ PayPal: ✅ Available (standard payment method)')
+                  }
+                  if (enabledMethods.includes('klarna')) {
+                    console.log('🛍️ Klarna: ✅ Available (Pay later option)')
+                  }
+                }
+              }}
+              onShippingAddressChange={(event) => {
+                // Handle shipping address changes if needed
+                console.log('Shipping address changed:', event)
+              }}
+              onShippingRateChange={(event) => {
+                // Handle shipping rate changes if needed
+                console.log('Shipping rate changed:', event)
+              }}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <Button disabled className="h-12 opacity-50">
+              <div className="w-4 h-4 bg-gray-300 rounded animate-pulse mx-auto" />
+            </Button>
+            <Button disabled className="h-12 opacity-50">
+              <div className="w-4 h-4 bg-gray-300 rounded animate-pulse mx-auto" />
+            </Button>
+          </div>
+        )}
+
+        {/* Loading overlay */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded-lg z-10">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-medium text-gray-700">Processing payment...</span>
+            </div>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   )
