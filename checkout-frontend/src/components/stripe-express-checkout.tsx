@@ -243,11 +243,12 @@ export function StripeExpressCheckout({
               // Klarna theme not supported in TypeScript definitions
             },
             paymentMethods: {
-              applePay: 'always',  // Force Apple Pay to show
-              klarna: 'always',    // Force Klarna to show
-              // Remove custom PayPal for now - use standard PayPal
+              applePay: 'auto',    // Let Stripe auto-detect based on device
+              klarna: 'auto',      // Let Stripe auto-detect based on eligibility
+              paypal: 'auto',      // Let Stripe auto-detect
+              link: 'auto',        // Let Stripe auto-detect
               // Other methods: let Stripe auto-detect
-            } as any,
+            },
             emailRequired: true,
           }}
           onConfirm={handleConfirm}
