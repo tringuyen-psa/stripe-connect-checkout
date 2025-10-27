@@ -240,8 +240,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                     <div className="space-y-6">
                         {/* Express Checkout */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <p className="text-sm font-semibold mb-4">Express checkout</p>
-
                             <StripeExpressCheckout
                                 customerEmail={email}
                                 customerInfo={{

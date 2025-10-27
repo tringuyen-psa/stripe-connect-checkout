@@ -121,7 +121,7 @@ export function PaymentMethods({ paymentMethod, setPaymentMethod, isProcessing, 
             )}
 
             {/* PayPal */}
-            <div
+            {/* <div
                 className={`border rounded-lg ${paymentMethod === "paypal" ? "border-blue-500 bg-blue-50" : "border-gray-300"
                     }`}
             >
@@ -142,10 +142,10 @@ export function PaymentMethods({ paymentMethod, setPaymentMethod, isProcessing, 
                         </svg>
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Shop Pay */}
-            <div
+            {/* <div
                 className={`border rounded-lg ${paymentMethod === "shop-pay" ? "border-blue-500 bg-blue-50" : "border-gray-300"
                     }`}
             >
@@ -167,7 +167,7 @@ export function PaymentMethods({ paymentMethod, setPaymentMethod, isProcessing, 
                         shop
                     </div>
                 </div>
-            </div>
+            </div> */}
         </div>
     )
 }
