@@ -70,7 +70,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
     const [paymentMethod, setPaymentMethod] = useState("credit-card")
     const [saveInfo, setSaveInfo] = useState(true)
 
-  
+
     // Payment states
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentError, setPaymentError] = useState<string | null>(null)
@@ -330,9 +330,9 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                     onCheckedChange={(checked: boolean) => setNewsletter(checked)}
                                     className="mt-1"
                                 />
-                                <label className="text-sm text-gray-700">
+                                {/* <label className="text-sm text-gray-700">
                                     Stay committed with tips, inspiration, and community.
-                                </label>
+                                </label> */}
                             </div>
                         </div>
 
@@ -355,7 +355,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input
-                                        placeholder="First name"
+                                        placeholder="First name (e.g., John)"
                                         value={firstName}
                                         onChange={(e) => {
                                             setFirstName(e.target.value)
@@ -364,7 +364,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         className="border-gray-300"
                                     />
                                     <Input
-                                        placeholder="Last name"
+                                        placeholder="Last name (e.g., Smith)"
                                         value={lastName}
                                         onChange={(e) => {
                                             setLastName(e.target.value)
@@ -375,7 +375,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 </div>
 
                                 <Input
-                                    placeholder="Address"
+                                    placeholder="Street address (e.g., 123 Main Street)"
                                     value={address}
                                     onChange={(e) => {
                                         setAddress(e.target.value)
@@ -385,7 +385,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 />
 
                                 <Input
-                                    placeholder="Apartment, suite, unit, etc. (optional)"
+                                    placeholder="Apartment, suite, unit, etc. (e.g., Apt 4B)"
                                     value={apartment}
                                     onChange={(e) => setApartment(e.target.value)}
                                     className="border-gray-300"
@@ -393,7 +393,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <Input
-                                        placeholder="City"
+                                        placeholder="City (e.g., Los Angeles)"
                                         value={city}
                                         onChange={(e) => {
                                             setCity(e.target.value)
@@ -418,7 +418,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         </SelectContent>
                                     </Select>
                                     <Input
-                                        placeholder="ZIP/Postal code"
+                                        placeholder="ZIP/Postal (e.g., 90210)"
                                         value={zipCode}
                                         onChange={(e) => handleZipCodeChange(e.target.value)}
                                         className="border-gray-300"
@@ -426,7 +426,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 </div>
 
                                 <Input
-                                    placeholder="Phone number (include country code)"
+                                    placeholder="Phone number (e.g., +1 (555) 123-4567)"
                                     value={phone}
                                     onChange={(e) => handlePhoneChange(e.target.value)}
                                     className="border-gray-300"
@@ -438,14 +438,14 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         onCheckedChange={(checked: boolean) => setSmsUpdates(checked)}
                                         className="mt-1"
                                     />
-                                    <label className="text-sm text-gray-700">
+                                    {/* <label className="text-sm text-gray-700">
                                         Text me when my AG1 ships and about exclusive health and science content
-                                    </label>
+                                    </label> */}
                                 </div>
                             </div>
                         </div>
 
-  
+
                         {/* Shipping Method */}
                         {/* <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h2 className="text-lg font-semibold mb-2">Shipping method</h2>

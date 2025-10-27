@@ -63,11 +63,11 @@ export function PaymentMethods({
                             {/* Visa Logo */}
                             <div className="relative">
                                 <svg width="42" height="26" viewBox="0 0 42 26" fill="none" className="drop-shadow-sm">
-                                    <rect width="42" height="26" rx="4" fill="url(#visaGradient)"/>
+                                    <rect width="42" height="26" rx="4" fill="url(#visaGradient)" />
                                     <defs>
                                         <linearGradient id="visaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" style={{stopColor: '#1A1F71'}}/>
-                                            <stop offset="100%" style={{stopColor: '#1434CB'}}/>
+                                            <stop offset="0%" style={{ stopColor: '#1A1F71' }} />
+                                            <stop offset="100%" style={{ stopColor: '#1434CB' }} />
                                         </linearGradient>
                                     </defs>
                                     <text x="21" y="17" fontSize="11" fontWeight="800" fill="white" textAnchor="middle" fontFamily="Arial, sans-serif" letterSpacing="1">VISA</text>
@@ -77,21 +77,21 @@ export function PaymentMethods({
                             {/* Mastercard Logo */}
                             <div className="relative">
                                 <svg width="42" height="26" viewBox="0 0 42 26" fill="none" className="drop-shadow-sm">
-                                    <rect width="42" height="26" rx="4" fill="#F5F5F5"/>
-                                    <circle cx="16" cy="13" r="7" fill="#EB001B"/>
-                                    <circle cx="26" cy="13" r="7" fill="#F79E1B"/>
-                                    <path d="M21 8C23.5 10 23.5 16 21 18C18.5 16 18.5 10 21 8Z" fill="#FF5F00"/>
+                                    <rect width="42" height="26" rx="4" fill="#F5F5F5" />
+                                    <circle cx="16" cy="13" r="7" fill="#EB001B" />
+                                    <circle cx="26" cy="13" r="7" fill="#F79E1B" />
+                                    <path d="M21 8C23.5 10 23.5 16 21 18C18.5 16 18.5 10 21 8Z" fill="#FF5F00" />
                                 </svg>
                             </div>
 
                             {/* American Express Logo */}
                             <div className="relative">
                                 <svg width="42" height="26" viewBox="0 0 42 26" fill="none" className="drop-shadow-sm">
-                                    <rect width="42" height="26" rx="4" fill="url(#amexGradient)"/>
+                                    <rect width="42" height="26" rx="4" fill="url(#amexGradient)" />
                                     <defs>
                                         <linearGradient id="amexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" style={{stopColor: '#006FCF'}}/>
-                                            <stop offset="100%" style={{stopColor: '#0D4F8C'}}/>
+                                            <stop offset="0%" style={{ stopColor: '#006FCF' }} />
+                                            <stop offset="100%" style={{ stopColor: '#0D4F8C' }} />
                                         </linearGradient>
                                     </defs>
                                     <text x="21" y="11" fontSize="5.5" fontWeight="800" fill="white" textAnchor="middle" fontFamily="Arial, sans-serif" letterSpacing="0.5">AMERICAN</text>
@@ -120,7 +120,7 @@ export function PaymentMethods({
             </div>
 
             {/* Billing Address */}
-            {paymentMethod === "credit-card" && (
+            {/* {paymentMethod === "credit-card" && (
                 <div className="flex items-start gap-3 py-2">
                     <Checkbox
                         checked={billingAddress}
@@ -131,7 +131,7 @@ export function PaymentMethods({
                         Use shipping address as billing address
                     </label>
                 </div>
-            )}
+            )} */}
 
             {/* Shop Pay */}
             {/* <div
