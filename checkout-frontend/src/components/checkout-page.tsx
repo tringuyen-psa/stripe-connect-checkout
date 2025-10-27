@@ -84,7 +84,69 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
         setPaymentError(error)
     }
 
-    
+    // Handle PayPal success
+    const handlePayPalSuccess = async (paymentIntentId: string) => {
+        try {
+            // Create order with PayPal payment
+            const orderItems = products.map(product => ({
+                name: product.name,
+                price: product.price,
+                quantity: product.quantity
+            }))
+
+            const orderResponse = await apiClient.createOrder({
+                paymentIntentId: paymentIntentId,
+                items: orderItems,
+                customer: {
+                    email,
+                    firstName,
+                    lastName,
+                    phone,
+                    address: `${address}${apartment ? `, ${apartment}` : ''}`,
+                    city,
+                    country: 'United States',
+                    postalCode: zipCode,
+                },
+                subtotal: getOrderTotal(),
+                tax: 0,
+                shipping: 0,
+                total: getOrderTotal(),
+                currency: 'usd',
+                paymentMethodId: paymentIntentId,
+                isExpressCheckout: false
+            })
+
+            if (orderResponse.error) {
+                throw new Error(orderResponse.error || 'Failed to create order')
+            }
+
+            // Redirect to success page with PayPal payment details
+            const orderId = (orderResponse.data as any)?.id
+
+            const params = new URLSearchParams({
+                orderId: orderId || 'unknown',
+                paymentId: paymentIntentId || 'unknown',
+                amount: getOrderTotal().toString(),
+                currency: 'usd',
+                status: 'completed',
+                email: email,
+                paymentMethod: 'paypal'
+            })
+
+            window.location.href = '/success?' + params.toString()
+
+        } catch (error) {
+            console.error('PayPal order creation error:', error)
+            setPaymentError(error instanceof Error ? error.message : 'Failed to create order after PayPal payment')
+        }
+    }
+
+    // Handle PayPal error
+    const handlePayPalError = (error: string) => {
+        setPaymentError(error)
+    }
+
+
     const handlePlaceOrder = async () => {
         // Check for missing required fields
         const missingFields = []
@@ -206,9 +268,12 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                 })
 
                 window.location.href = '/success?' + params.toString()
+            } else if (paymentMethod === 'paypal') {
+                // PayPal is handled through the PayPal button
+                setPaymentError("Please use the PayPal button above to complete your payment.")
             } else {
-                // Handle other payment methods (PayPal, Shop Pay, etc.)
-                setPaymentError("Other payment methods are not implemented yet.")
+                // Handle other payment methods (Shop Pay, etc.)
+                setPaymentError("This payment method is not implemented yet.")
             }
 
         } catch (error) {
@@ -433,6 +498,11 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 cardRef={cardInputRef}
                                 isProcessing={isProcessing}
                                 paymentError={paymentError}
+                                clientSecret={clientSecret}
+                                onPayPalSuccess={handlePayPalSuccess}
+                                onPayPalError={handlePayPalError}
+                                orderAmount={getOrderTotal()}
+                                customerEmail={email}
                             />
                         </div>
 
@@ -466,13 +536,15 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                             className="w-full h-14 text-base font-semibold text-white"
                             style={{ backgroundColor: '#1a5f3f', borderRadius: '6px' }}
                             onClick={handlePlaceOrder}
-                            disabled={isProcessing || getOrderTotal() === 0}
+                            disabled={isProcessing || getOrderTotal() === 0 || paymentMethod === 'paypal'}
                         >
                             {isProcessing ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     Processing...
                                 </div>
+                            ) : paymentMethod === 'paypal' ? (
+                                'Complete payment with PayPal button above'
                             ) : (
                                 `Place Order • $${getOrderTotal().toFixed(2)}`
                             )}

@@ -39,6 +39,7 @@ export function StripeExpressCheckout({
   const elements = useElements()
   const { getTotal, products } = useProducts()
   const [loading, setLoading] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState<string>('')
 
   // Component now receives clientSecret from parent, no need to create it here
   useEffect(() => {
