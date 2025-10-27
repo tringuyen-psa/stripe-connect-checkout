@@ -110,6 +110,7 @@ class ApiClient {
 
   // Order APIs
   async createOrder(orderData: {
+    paymentIntentId: string;
     items: Array<{
       name: string;
       price: number;
@@ -129,6 +130,9 @@ class ApiClient {
     tax: number;
     shipping: number;
     total: number;
+    currency?: string;
+    paymentMethodId?: string;
+    isExpressCheckout?: boolean;
   }) {
     return this.request('/orders', {
       method: 'POST',
@@ -138,6 +142,10 @@ class ApiClient {
 
   async getOrder(id: string) {
     return this.request(`/orders/${id}`);
+  }
+
+  async getOrderByPaymentIntentId(paymentIntentId: string) {
+    return this.request(`/orders/payment-intent/${paymentIntentId}`);
   }
 
   async getOrders() {

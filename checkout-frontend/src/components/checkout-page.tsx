@@ -155,10 +155,11 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                 }
 
                 // For testing, we'll simulate successful payment confirmation
-                const { client_secret } = paymentIntentResponse.data as any
-                console.log('Payment intent created successfully:', { client_secret, paymentMethodData })
+                const { client_secret, payment_intent_id } = paymentIntentResponse.data as any
+                console.log('Payment intent created successfully:', { client_secret, payment_intent_id })
 
-                // Payment successful - create order
+                // Simulate successful payment - in production, you'd confirm payment with Stripe here
+                // For now, we'll assume payment was successful and create the order
                 const orderItems = products.map(product => ({
                     name: product.name,
                     price: product.price,
@@ -166,6 +167,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                 }))
 
                 const orderResponse = await apiClient.createOrder({
+                    paymentIntentId: payment_intent_id,
                     items: orderItems,
                     customer: {
                         email,
@@ -181,6 +183,9 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                     tax: 0,
                     shipping: 0,
                     total: getOrderTotal(),
+                    currency: 'usd',
+                    paymentMethodId: paymentMethodData.paymentMethodId,
+                    isExpressCheckout: false,
                 })
 
                 if (orderResponse.error) {
@@ -189,11 +194,10 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
 
                 // Redirect to success page with payment details
                 const orderId = (orderResponse.data as any)?.id
-                const paymentIntentId = (paymentIntentResponse.data as any)?.paymentIntentId
 
                 const params = new URLSearchParams({
                     orderId: orderId || 'unknown',
-                    paymentId: paymentIntentId || 'unknown',
+                    paymentId: payment_intent_id || 'unknown',
                     amount: totalAmountForDisplay.toString(),
                     currency: 'usd',
                     status: 'completed',

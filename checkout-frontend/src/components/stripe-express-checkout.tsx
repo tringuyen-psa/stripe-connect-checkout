@@ -95,7 +95,7 @@ export function StripeExpressCheckout({
         }
 
         // We got a clientSecret, now we can confirm the payment
-        const { client_secret } = expressPaymentResponse.data as any
+        const { client_secret, payment_intent_id } = expressPaymentResponse.data as any
 
         const { error } = await stripe.confirmPayment({
           elements,
@@ -132,6 +132,7 @@ export function StripeExpressCheckout({
       // If we get here with no error and no redirect, payment was successful
       // Create order after successful payment
       const orderResponse = await apiClient.createOrder({
+        paymentIntentId: payment_intent_id,
         items: products.map(p => ({
           name: p.name,
           price: p.price,
@@ -151,6 +152,8 @@ export function StripeExpressCheckout({
         tax: 0,
         shipping: 0,
         total: getTotal(),
+        currency: 'usd',
+        isExpressCheckout: true,
       })
 
       if (orderResponse.error) {
