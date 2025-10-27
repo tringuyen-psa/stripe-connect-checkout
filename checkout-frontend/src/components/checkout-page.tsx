@@ -15,7 +15,6 @@ import { useStripe } from '@stripe/react-stripe-js'
 import { useProducts } from "@/context/ProductContext"
 import { useRef } from 'react'
 import { countryList } from "@/lib/countries"
-import { CountrySelector } from "./country-selector"
 
 interface CheckoutPageProps {
     clientSecret?: string
@@ -40,15 +39,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
     const [paymentMethod, setPaymentMethod] = useState("credit-card")
     const [saveInfo, setSaveInfo] = useState(true)
 
-    // Simple country testing for regional payment methods
-    const [useRegionalTesting, setUseRegionalTesting] = useState(false)
-    const [testCountry, setTestCountry] = useState("US")
-
-    // Handle country change for testing
-    const handleCountryChange = (country: string) => {
-        setTestCountry(country)
-    }
-
+  
     // Payment states
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentError, setPaymentError] = useState<string | null>(null)
@@ -251,28 +242,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <p className="text-sm font-semibold mb-4">Express checkout</p>
 
-                            {/* Simple Country Testing */}
-                            <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-gray-600">🌍 Test payment methods by country</span>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setUseRegionalTesting(!useRegionalTesting)}
-                                        className="text-xs"
-                                    >
-                                        {useRegionalTesting ? 'Use Default' : 'Test Countries'}
-                                    </Button>
-                                </div>
-
-                                {useRegionalTesting && (
-                                    <CountrySelector
-                                        onCountryChange={handleCountryChange}
-                                        disabled={isProcessing}
-                                    />
-                                )}
-                            </div>
-
                             <StripeExpressCheckout
                                 customerEmail={email}
                                 customerInfo={{
@@ -283,14 +252,13 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         city: city,
                                         state: state,
                                         postal_code: zipCode,
-                                        country: useRegionalTesting ? testCountry : country
+                                        country: country
                                     }
                                 }}
                                 onSuccess={handleExpressCheckoutSuccess}
                                 onError={handleExpressCheckoutError}
                                 disabled={isProcessing || getTotal() === 0}
                                 clientSecret={clientSecret}
-                                testCountry={useRegionalTesting ? testCountry : undefined}
                             />
                             <p className="text-xs text-gray-500 text-center mb-3">
                                 By continuing with your payment, you agree to the future charges listed on this page and the cancellation policy.

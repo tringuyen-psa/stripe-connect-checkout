@@ -25,7 +25,6 @@ interface StripeExpressCheckoutProps {
   onError: (error: string) => void
   disabled?: boolean
   clientSecret?: string
-  testCountry?: string // For regional testing
 }
 
 export function StripeExpressCheckout({
@@ -34,8 +33,7 @@ export function StripeExpressCheckout({
   onSuccess,
   onError,
   disabled = false,
-  clientSecret,
-  testCountry
+  clientSecret
 }: StripeExpressCheckoutProps) {
   const stripe = useStripe()
   const elements = useElements()
@@ -49,32 +47,13 @@ export function StripeExpressCheckout({
       console.log('Stripe Express Checkout ready')
       console.log('Current configuration:', {
         hasClientSecret: !!clientSecret,
-        testCountry: testCountry || 'Not set',
         customerInfoCountry: customerInfo.address.country,
         paymentMethods: 'auto - Stripe will determine available methods based on account activation'
       })
-
-      if (testCountry) {
-        console.log(`🌍 Regional Testing Enabled for ${testCountry}:`, {
-          expectedPaymentMethods: getExpectedPaymentMethods(),
-          localPaymentMethods: getLocalPaymentMethods()
-        })
-      }
     }
-  }, [stripe, elements, clientSecret, testCountry, customerInfo.address.country])
+  }, [stripe, elements, clientSecret, customerInfo.address.country])
 
-  // Get expected payment methods (all enabled methods)
-  const getExpectedPaymentMethods = (): string[] => {
-    // All enabled payment methods
-    return ['Apple Pay', 'Google Pay', 'PayPal', 'Link', 'Klarna', 'Amazon Pay']
-  }
-
-  // Get local payment methods that should be available (all enabled methods)
-  const getLocalPaymentMethods = (): string[] => {
-    // All enabled payment methods
-    return ['Apple Pay', 'Google Pay', 'PayPal', 'Link', 'Klarna', 'Amazon Pay']
-  }
-
+  
   const handleConfirm = async (event: any) => {
     if (!stripe || !elements) {
       onError('Payment system not ready')
