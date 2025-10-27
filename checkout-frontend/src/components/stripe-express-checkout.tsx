@@ -132,7 +132,7 @@ export function StripeExpressCheckout({
       // If we get here with no error and no redirect, payment was successful
       // Create order after successful payment
       const orderResponse = await apiClient.createOrder({
-        paymentIntentId: payment_intent_id,
+        paymentIntentId: 'pi_demo_' + Date.now(),
         items: products.map(p => ({
           name: p.name,
           price: p.price,
