@@ -25,13 +25,13 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     {
       id: "1",
       name: "AG1 Monthly Subscription",
-      price: 79.00,
+      price: 1.00,
       quantity: 1
     },
     {
       id: "2",
       name: "AG1 Travel Packs",
-      price: 49.00,
+      price: 0.50,
       quantity: 1
     }
   ])
