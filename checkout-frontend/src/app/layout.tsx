@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ProductProvider } from '@/context/ProductContext'
 import { StripeErrorInit } from '@/components/stripe-error-init'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,10 +26,12 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <ProductProvider>
-          <StripeErrorInit />
-          {children}
-        </ProductProvider>
+        <ErrorBoundary>
+          <ProductProvider>
+            <StripeErrorInit />
+            {children}
+          </ProductProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

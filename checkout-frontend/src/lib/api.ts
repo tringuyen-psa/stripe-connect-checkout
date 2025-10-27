@@ -1,5 +1,14 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:29000/api';
 
+// Validate API URL in production
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+  if (!process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL.includes('localhost')) {
+    console.error('❌ Production Error: NEXT_PUBLIC_API_URL is not properly configured for production');
+    // Don't crash the app, but show a warning
+    console.warn('Please configure NEXT_PUBLIC_API_URL in your production environment');
+  }
+}
+
 export interface ApiResponse<T> {
   data?: T;
   message?: string;
@@ -13,6 +22,13 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      // Check if API is accessible in production
+      if (process.env.NODE_ENV === 'production' && API_BASE_URL.includes('localhost')) {
+        return {
+          error: 'Backend API not configured for production. Please set NEXT_PUBLIC_API_URL environment variable.'
+        };
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -29,8 +45,17 @@ class ApiClient {
       const data = await response.json();
       return { data };
     } catch (error) {
+      // Provide better error messages for common issues
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        return {
+          error: 'Unable to connect to payment service. Please check your internet connection and try again.'
+        };
+      }
+
       return {
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
+        error: errorMessage,
       };
     }
   }

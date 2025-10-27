@@ -4,7 +4,14 @@ import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { ReactNode } from 'react'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+// Validate Stripe key before loading
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+if (!stripeKey) {
+  console.error('❌ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined');
+  throw new Error('Stripe configuration error: Missing publishable key');
+}
+
+const stripePromise = loadStripe(stripeKey);
 
 interface StripeWrapperProps {
     children: ReactNode

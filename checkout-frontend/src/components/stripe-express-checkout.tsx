@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api"
 import { useProducts } from "@/context/ProductContext"
 import { logStripeError, isExtensionError } from "@/lib/stripe-error-handler"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 interface StripeExpressCheckoutProps {
   customerEmail: string
@@ -199,8 +200,9 @@ export function StripeExpressCheckout({
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-semibold">Express checkout</p>
+    <ErrorBoundary>
+      <div className="space-y-3">
+        <p className="text-sm font-semibold">Express checkout</p>
 
       {/* Options Labels */}
       <div className="flex justify-between items-center px-1">
@@ -345,6 +347,7 @@ export function StripeExpressCheckout({
           </Button>
         </div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }
