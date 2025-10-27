@@ -22,6 +22,21 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      // For development: Mock express checkout payment when backend is not running
+      if (endpoint.includes('express-checkout') && API_BASE_URL.includes('localhost:29000')) {
+        console.warn('🔄 Using mock payment data for development (backend not running)');
+
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        return {
+          data: {
+            clientSecret: 'pi_mock_client_secret_for_development_testing_' + Date.now(),
+            availablePaymentMethods: ['applePay', 'googlePay', 'paypal', 'link']
+          } as T
+        };
+      }
+
       // Check if API is accessible in production
       if (process.env.NODE_ENV === 'production' && API_BASE_URL.includes('localhost')) {
         return {
