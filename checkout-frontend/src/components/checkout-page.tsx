@@ -24,15 +24,15 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
     const stripe = useStripe()
     const { getTotal, products } = useProducts()
     const cardInputRef = useRef<any>(null)
-    const [email, setEmail] = useState("test@example.com")
-    const [firstName, setFirstName] = useState("John")
-    const [lastName, setLastName] = useState("Doe")
-    const [address, setAddress] = useState("123 Main Street")
+    const [email, setEmail] = useState("")
+    const [firstName, setFirstName] = useState("")
+    const [lastName, setLastName] = useState("")
+    const [address, setAddress] = useState("")
     const [apartment, setApartment] = useState("")
-    const [city, setCity] = useState("Los Angeles")
-    const [selectedState, setSelectedState] = useState("California")
-    const [zipCode, setZipCode] = useState("90210")
-    const [phone, setPhone] = useState("+1 (555) 123-4567")
+    const [city, setCity] = useState("")
+    const [selectedState, setSelectedState] = useState("")
+    const [zipCode, setZipCode] = useState("")
+    const [phone, setPhone] = useState("")
     const [selectedCountry, setSelectedCountry] = useState<Country>(countryList.find(c => c.name === "United States") || countryList[0])
     const [newsletter, setNewsletter] = useState(true)
 
@@ -340,22 +340,9 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h2 className="text-lg font-semibold mb-4">Delivery</h2>
                             <div className="space-y-4">
-                                <Select value={selectedCountry.name} onValueChange={handleCountryChange}>
-                                    <SelectTrigger className="border-gray-300">
-                                        <SelectValue placeholder="Select country" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {countryList.map((country) => (
-                                            <SelectItem key={country.code} value={country.name}>
-                                                {country.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input
-                                        placeholder="First name (e.g., John)"
+                                        placeholder="First name"
                                         value={firstName}
                                         onChange={(e) => {
                                             setFirstName(e.target.value)
@@ -364,7 +351,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         className="border-gray-300"
                                     />
                                     <Input
-                                        placeholder="Last name (e.g., Smith)"
+                                        placeholder="Last name"
                                         value={lastName}
                                         onChange={(e) => {
                                             setLastName(e.target.value)
@@ -375,7 +362,7 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 </div>
 
                                 <Input
-                                    placeholder="Street address (e.g., 123 Main Street)"
+                                    placeholder="Address"
                                     value={address}
                                     onChange={(e) => {
                                         setAddress(e.target.value)
@@ -385,15 +372,15 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 />
 
                                 <Input
-                                    placeholder="Apartment, suite, unit, etc. (e.g., Apt 4B)"
+                                    placeholder="Apartment, suite, unit, etc. (optional)"
                                     value={apartment}
                                     onChange={(e) => setApartment(e.target.value)}
                                     className="border-gray-300"
                                 />
 
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     <Input
-                                        placeholder="City (e.g., Los Angeles)"
+                                        placeholder="City"
                                         value={city}
                                         onChange={(e) => {
                                             setCity(e.target.value)
@@ -401,32 +388,40 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                         }}
                                         className="border-gray-300"
                                     />
-                                    <Select value={selectedState} onValueChange={handleStateChange}>
-                                        <SelectTrigger className="border-gray-300">
-                                            <SelectValue placeholder="State/Province" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {selectedCountry.states ? (
-                                                selectedCountry.states.map((state) => (
-                                                    <SelectItem key={state.code} value={state.name}>
-                                                        {state.name}
-                                                    </SelectItem>
-                                                ))
-                                            ) : (
-                                                <SelectItem value="">No states available</SelectItem>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
                                     <Input
-                                        placeholder="ZIP/Postal (e.g., 90210)"
+                                        placeholder="State/Province"
+                                        value={selectedState}
+                                        onChange={(e) => {
+                                            setSelectedState(e.target.value)
+                                            clearError()
+                                        }}
+                                        className="border-gray-300"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        placeholder="ZIP/Postal code"
                                         value={zipCode}
                                         onChange={(e) => handleZipCodeChange(e.target.value)}
+                                        className="border-gray-300"
+                                    />
+                                    <Input
+                                        placeholder="Country"
+                                        value={selectedCountry.name}
+                                        onChange={(e) => {
+                                            const country = countryList.find(c => c.name === e.target.value)
+                                            if (country) {
+                                                setSelectedCountry(country)
+                                            }
+                                            clearError()
+                                        }}
                                         className="border-gray-300"
                                     />
                                 </div>
 
                                 <Input
-                                    placeholder="Phone number (e.g., +1 (555) 123-4567)"
+                                    placeholder="Phone number"
                                     value={phone}
                                     onChange={(e) => handlePhoneChange(e.target.value)}
                                     className="border-gray-300"
