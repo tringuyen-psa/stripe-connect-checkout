@@ -265,9 +265,6 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                             <ChevronLeft className="w-4 h-4" />
                             <span>Edit Order</span>
                         </Link>
-                        <div className="text-2xl font-bold" style={{ color: '#1a5f3f' }}>
-                            AG1
-                        </div>
                         <div className="w-24" />
                     </div>
                 </div>
@@ -325,11 +322,11 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 className="border-gray-300"
                             />
                             <div className="flex items-start gap-3 mt-4">
-                                <Checkbox
+                                {/* <Checkbox
                                     checked={newsletter}
                                     onCheckedChange={(checked: boolean) => setNewsletter(checked)}
                                     className="mt-1"
-                                />
+                                /> */}
                                 {/* <label className="text-sm text-gray-700">
                                     Stay committed with tips, inspiration, and community.
                                 </label> */}
@@ -428,11 +425,11 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                                 />
 
                                 <div className="flex items-start gap-3">
-                                    <Checkbox
+                                    {/* <Checkbox
                                         checked={smsUpdates}
                                         onCheckedChange={(checked: boolean) => setSmsUpdates(checked)}
                                         className="mt-1"
-                                    />
+                                    /> */}
                                     {/* <label className="text-sm text-gray-700">
                                         Text me when my AG1 ships and about exclusive health and science content
                                     </label> */}
