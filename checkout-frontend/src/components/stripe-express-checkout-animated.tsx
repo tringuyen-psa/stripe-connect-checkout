@@ -143,7 +143,7 @@ export function AnimatedExpressCheckout({
             // Create payment intent for Express Checkout if we don't have a clientSecret
             if (!clientSecret) {
                 const expressPaymentResponse = await apiClient.createExpressCheckoutPayment({
-                    amount: getTotal(),
+                    amount: getTotal() * 100, // Convert to cents for Stripe
                     currency: 'usd',
                     customerEmail,
                     customerInfo: {

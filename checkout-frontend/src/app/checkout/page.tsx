@@ -26,7 +26,7 @@ export default function Checkout() {
                 const startTime = Date.now()
 
                 const response = await apiClient.createExpressCheckoutPayment({
-                    amount: getTotal(),
+                    amount: getTotal() * 100, // Convert to cents for Stripe
                     currency: 'usd',
                     customerEmail: 'customer@example.com',
                     stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID, // Disabled: Cannot transfer to your own account
