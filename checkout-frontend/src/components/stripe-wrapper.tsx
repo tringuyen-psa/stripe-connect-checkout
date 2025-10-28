@@ -10,7 +10,10 @@ if (!stripeKey) {
   console.error('❌ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined');
 }
 
-const stripePromise = stripeKey ? loadStripe(stripeKey) : Promise.resolve(null);
+// Load Stripe with connected account if specified
+const stripePromise = stripeKey ? loadStripe(stripeKey, {
+  stripeAccount: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID,
+}) : Promise.resolve(null);
 
 interface StripeWrapperProps {
     children: ReactNode

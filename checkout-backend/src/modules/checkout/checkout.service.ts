@@ -65,25 +65,60 @@ export class CheckoutService {
     stripeAccountId?: string;
   }) {
     try {
+      console.log('🔄 Creating PaymentIntent with data:', {
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        customerEmail: paymentData.customerEmail,
+        paymentMethodId: paymentData.paymentMethodId,
+        stripeAccountId: paymentData.stripeAccountId,
+      });
+
       const paymentIntentData: any = {
-        amount: Math.round(paymentData.amount * 100), // Convert to cents
+        amount: Math.round(paymentData.amount), // Amount already in cents from frontend
         currency: paymentData.currency,
         metadata: {
           customerEmail: paymentData.customerEmail,
         },
-        payment_method: paymentData.paymentMethodId,
-        confirmation_method: paymentData.paymentMethodId ? 'manual' : 'automatic',
-        confirm: !!paymentData.paymentMethodId,
+        // Always include return_url for safety
+        return_url: `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/checkout/success`,
       };
 
+      if (paymentData.paymentMethodId) {
+        // Use specific payment method - NO automatic_payment_methods when using payment_method
+        paymentIntentData.payment_method = paymentData.paymentMethodId;
+        paymentIntentData.confirmation_method = 'manual';
+        paymentIntentData.confirm = true;
+        console.log('✅ Using specific payment method:', paymentData.paymentMethodId);
+      } else {
+        // Use automatic payment methods (for general payment intent creation) - NO confirmation_method
+        paymentIntentData.automatic_payment_methods = {
+          enabled: true,
+          allow_redirects: 'never',
+        };
+        console.log('🔄 Using automatic payment methods');
+      }
+
+      // Create payment intent using the specified account
       let paymentIntent;
       if (paymentData.stripeAccountId) {
+        // Always use connected account when specified
+        // Payment method should be created on the same account
+        console.log('🔗 Creating PaymentIntent on connected account:', paymentData.stripeAccountId);
         paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData, {
           stripeAccount: paymentData.stripeAccountId,
         });
       } else {
+        console.log('🏢 Creating PaymentIntent on platform account');
         paymentIntent = await this.stripe.paymentIntents.create(paymentIntentData);
       }
+
+      console.log('✅ PaymentIntent created successfully:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        client_secret: paymentIntent.client_secret ? 'provided' : 'missing',
+      });
 
       return {
         success: true,
@@ -125,7 +160,7 @@ export class CheckoutService {
 
       // Optimized minimal payment intent data
       const paymentIntentData: any = {
-        amount: Math.round(paymentData.amount * 100),
+        amount: Math.round(paymentData.amount), // Amount already in cents from frontend
         currency: currency,
         metadata: {
           customerEmail: paymentData.customerEmail,
@@ -241,11 +276,60 @@ export class CheckoutService {
     return methods;
   }
 
-  async confirmPayment(paymentIntentId: string) {
+  async confirmPayment(paymentIntentId: string, stripeAccountId?: string) {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      console.log('🔄 confirmPayment called with:', {
+        paymentIntentId,
+        stripeAccountId,
+        paymentIntentIdType: typeof paymentIntentId,
+      });
+
+      if (!paymentIntentId || paymentIntentId === 'undefined') {
+        throw new Error('PaymentIntent ID is missing or undefined');
+      }
+
+      // First retrieve the payment intent to check its current status
+      let paymentIntent;
+      if (stripeAccountId) {
+        console.log('🔗 Retrieving PaymentIntent from connected account:', stripeAccountId);
+        paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId, {
+          stripeAccount: stripeAccountId,
+        });
+      } else {
+        console.log('🏢 Retrieving PaymentIntent from platform account');
+        paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      }
+
+      // If the payment is already succeeded, return it directly
+      if (paymentIntent.status === 'succeeded') {
+        return {
+          success: true,
+          status: paymentIntent.status,
+          paymentIntent,
+        };
+      }
+
+      // If the payment requires confirmation, confirm it
+      if (paymentIntent.status === 'requires_confirmation') {
+        let confirmedPaymentIntent;
+        if (stripeAccountId) {
+          confirmedPaymentIntent = await this.stripe.paymentIntents.confirm(paymentIntentId, {
+            stripeAccount: stripeAccountId,
+          });
+        } else {
+          confirmedPaymentIntent = await this.stripe.paymentIntents.confirm(paymentIntentId);
+        }
+        return {
+          success: true,
+          status: confirmedPaymentIntent.status,
+          paymentIntent: confirmedPaymentIntent,
+        };
+      }
+
+      // For other statuses (requires_payment_method, requires_action, etc.)
       return {
-        success: true,
+        success: false,
+        error: `Payment cannot be confirmed. Current status: ${paymentIntent.status}`,
         status: paymentIntent.status,
         paymentIntent,
       };
@@ -281,7 +365,7 @@ export class CheckoutService {
   }) {
     try {
       const chargeRequestData: any = {
-        amount: Math.round(chargeData.amount * 100),
+        amount: Math.round(chargeData.amount), // Amount already in cents from frontend
         currency: chargeData.currency,
         source: chargeData.source,
         description: chargeData.description,

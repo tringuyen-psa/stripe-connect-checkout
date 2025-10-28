@@ -227,10 +227,13 @@ export function StripeExpressCheckout({
                 // },
                 paymentMethods: {
                   applePay: 'auto',    // Let Stripe auto-detect based on device
+                  googlePay: 'auto',   // Let Stripe auto-detect based on device
+                  amazonPay: 'auto',   // Let Stripe auto-detect based on availability
                   klarna: 'auto',      // Let Stripe auto-detect based on eligibility
                   link: 'auto',        // Let Stripe auto-detect
+                  // Note: afterpayClearpay and cashApp might not be in TypeScript definitions yet
                   // Other methods: let Stripe auto-detect
-                },
+                } as any, // Type assertion to allow additional properties
                 emailRequired: true,
               }}
               onConfirm={handleConfirm}
@@ -247,7 +250,15 @@ export function StripeExpressCheckout({
                 onError('Failed to load payment options. Please refresh the page.')
               }}
               onReady={({ availablePaymentMethods }) => {
-                console.log('Express Checkout ready with methods:', availablePaymentMethods)
+                console.log('🚀 Express Checkout ready with methods:', availablePaymentMethods)
+                console.log('📊 Available payment methods breakdown:')
+
+                // Log each payment method status
+                if (availablePaymentMethods) {
+                  Object.entries(availablePaymentMethods).forEach(([method, isAvailable]) => {
+                    console.log(`  ${method}: ${isAvailable ? '✅ Available' : '❌ Not available'}`)
+                  })
+                }
                 // According to migration guide, check available payment methods
                 if (!availablePaymentMethods || Object.keys(availablePaymentMethods).length === 0) {
                   console.warn('No payment methods available. Check Stripe Dashboard configuration.')
@@ -296,6 +307,8 @@ export function StripeExpressCheckout({
                   }
                   if (enabledMethods.includes('amazonPay')) {
                     console.log('🛒 Amazon Pay: ✅ Available and ready')
+                  } else if (availablePaymentMethods.amazonPay === false) {
+                    console.log('🛒 Amazon Pay: ❌ Not available (may not be activated in Stripe Dashboard)')
                   }
                   if (enabledMethods.includes('link')) {
                     console.log('🔗 Link: ✅ Available (Stripe\'s native payment method)')

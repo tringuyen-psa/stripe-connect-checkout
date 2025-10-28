@@ -29,7 +29,7 @@ export default function Checkout() {
                     amount: getTotal(),
                     currency: 'usd',
                     customerEmail: 'customer@example.com',
-                    // stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID, // Disabled: Cannot transfer to your own account
+                    stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID, // Disabled: Cannot transfer to your own account
                 })
 
                 const loadTime = Date.now() - startTime

@@ -210,6 +210,7 @@ class ApiClient {
   async confirmCardPayment(confirmPaymentData: {
     paymentMethodId: string;
     paymentIntentId: string;
+    stripeAccountId?: string;
   }) {
     return this.request('/payments/confirm-payment', {
       method: 'POST',

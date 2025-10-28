@@ -176,13 +176,13 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                     throw new Error('Payment method not created')
                 }
 
-                // Create payment intent with destination charge for Stripe Connect
+                // Create payment intent using platform account
                 const paymentIntentResponse = await apiClient.createPaymentIntent({
                     amount: Math.round(totalAmount),
                     currency: 'usd',
                     customerEmail: email,
                     paymentMethodId: paymentMethodData.id,
-                    // stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID, // Disabled: Cannot transfer to your own account
+                    stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID
                 })
 
                 if (paymentIntentResponse.error || !paymentIntentResponse.data) {
@@ -190,58 +190,71 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                 }
 
                 // For testing, we'll simulate successful payment confirmation
-                const { client_secret, payment_intent_id } = paymentIntentResponse.data as any
-                console.log('Payment intent created successfully:', { client_secret, payment_intent_id })
+                const { clientSecret, paymentIntentId } = paymentIntentResponse.data as any
+                console.log('Payment intent created successfully:', { clientSecret, paymentIntentId })
 
-                // Simulate successful payment - in production, you'd confirm payment with Stripe here
-                // For now, we'll assume payment was successful and create the order
+                // Confirm the payment intent using the backend confirmation endpoint
+                console.log('Confirming payment intent:', paymentIntentId)
+                const confirmResponse = await apiClient.confirmCardPayment({
+                    paymentIntentId: paymentIntentId,
+                    paymentMethodId: paymentMethodData.id,
+                    stripeAccountId: process.env.NEXT_PUBLIC_STRIPE_ACCOUNT_ID
+                })
+
+                if (confirmResponse.error || !confirmResponse.data) {
+                    throw new Error(confirmResponse.error || 'Failed to confirm payment')
+                }
+
+                console.log('Payment confirmed successfully:', confirmResponse.data)
+
+                // Create order after successful payment confirmation
                 const orderItems = products.map(product => ({
                     name: product.name,
                     price: product.price,
                     quantity: product.quantity
                 }))
 
-                const orderResponse = await apiClient.createOrder({
-                    paymentIntentId: payment_intent_id,
-                    items: orderItems,
-                    customer: {
-                        email,
-                        firstName,
-                        lastName,
-                        phone,
-                        address: `${address}${apartment ? `, ${apartment}` : ''}`,
-                        city,
-                        state: selectedState,
-                        country: selectedCountry.name,
-                        postalCode: zipCode,
-                    },
-                    subtotal: getOrderTotal(),
-                    tax: 0,
-                    shipping: 0,
-                    total: getOrderTotal(),
-                    currency: 'usd',
-                    paymentMethodId: paymentMethodData.paymentMethodId,
-                    isExpressCheckout: false,
-                })
+                // const orderResponse = await apiClient.createOrder({
+                //     paymentIntentId: payment_intent_id,
+                //     items: orderItems,
+                //     customer: {
+                //         email,
+                //         firstName,
+                //         lastName,
+                //         phone,
+                //         address: `${address}${apartment ? `, ${apartment}` : ''}`,
+                //         city,
+                //         state: selectedState,
+                //         country: selectedCountry.name,
+                //         postalCode: zipCode,
+                //     },
+                //     subtotal: getOrderTotal(),
+                //     tax: 0,
+                //     shipping: 0,
+                //     total: getOrderTotal(),
+                //     currency: 'usd',
+                //     paymentMethodId: paymentMethodData.id,
+                //     isExpressCheckout: false,
+                // })
 
-                if (orderResponse.error) {
-                    throw new Error(orderResponse.error || 'Failed to create order')
-                }
+                // if (orderResponse.error) {
+                //     throw new Error(orderResponse.error || 'Failed to create order')
+                // }
 
-                // Redirect to success page with payment details
-                const orderId = (orderResponse.data as any)?.id
+                // // Redirect to success page with payment details
+                // const orderId = (orderResponse.data as any)?.id
 
-                const params = new URLSearchParams({
-                    orderId: orderId || 'unknown',
-                    paymentId: payment_intent_id || 'unknown',
-                    amount: totalAmountForDisplay.toString(),
-                    currency: 'usd',
-                    status: 'completed',
-                    email: email,
-                    paymentMethod: 'credit-card'
-                })
+                // const params = new URLSearchParams({
+                //     orderId: orderId || 'unknown',
+                //     paymentId: payment_intent_id || 'unknown',
+                //     amount: totalAmountForDisplay.toString(),
+                //     currency: 'usd',
+                //     status: 'completed',
+                //     email: email,
+                //     paymentMethod: 'credit-card'
+                // })
 
-                window.location.href = '/success?' + params.toString()
+                // window.location.href = '/success?' + params.toString()
             } else {
                 // Handle other payment methods (Shop Pay, etc.)
                 setPaymentError("This payment method is not implemented yet.")

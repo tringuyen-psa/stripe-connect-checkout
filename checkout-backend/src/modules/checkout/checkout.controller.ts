@@ -53,8 +53,7 @@ export class CheckoutController {
   @ApiResponse({ status: 200, description: 'Payment confirmed successfully' })
   @ApiResponse({ status: 400, description: 'Payment confirmation failed' })
   async confirmCardPayment(@Body() confirmPaymentData: ConfirmPaymentDto) {
-    // This would integrate payment method with payment intent
-    return { success: true, message: 'Payment confirmation endpoint' };
+    return this.checkoutService.confirmPayment(confirmPaymentData.paymentIntentId, confirmPaymentData.stripeAccountId);
   }
 
   @Post('create-charge')

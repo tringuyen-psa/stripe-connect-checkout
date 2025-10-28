@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, forwardRef, useImperativeHandle } from 'react'
+import { useState, forwardRef, useImperativeHandle, useEffect } from 'react'
 import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertCircle } from "lucide-react"
-import { countryList } from '@/lib/countries'
+import { CountriesService, CountryOption } from './country.service'
 
 interface StripeCardInputProps {
     onCardChange: (isComplete: boolean) => void
@@ -19,8 +19,27 @@ const StripeCardInput = forwardRef<any, StripeCardInputProps>(
         const elements = useElements()
         const [nameOnCard, setNameOnCard] = useState("")
         const [country, setCountry] = useState("")
+        const [countries, setCountries] = useState<CountryOption[]>([])
+        const [isLoadingCountries, setIsLoadingCountries] = useState(true)
         const [inputError, setInputError] = useState<string | null>(null)
         const [isCardComplete, setIsCardComplete] = useState(false)
+
+        // Load countries from API on component mount
+        useEffect(() => {
+            const loadCountries = async () => {
+                try {
+                    setIsLoadingCountries(true)
+                    const countryOptions = await CountriesService.getCountriesForSelect()
+                    setCountries(countryOptions)
+                } catch (error) {
+                    console.error('Failed to load countries:', error)
+                } finally {
+                    setIsLoadingCountries(false)
+                }
+            }
+
+            loadCountries()
+        }, [])
 
         const handleCardChange = (event: any) => {
             if (event.complete) {
@@ -209,18 +228,21 @@ const StripeCardInput = forwardRef<any, StripeCardInputProps>(
                     <Select value={country} onValueChange={(value) => {
                         setCountry(value)
                         setInputError(null)
-                    }} disabled={isProcessing}>
+                    }} disabled={isProcessing || isLoadingCountries}>
                         <SelectTrigger className="w-full border-gray-300 bg-white hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500">
-                            <SelectValue placeholder="Select country" />
+                            <SelectValue placeholder={isLoadingCountries ? "Loading countries..." : "Select country"} />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border border-gray-300 shadow-lg z-50">
-                            {countryList.map((country) => (
-                                <SelectItem key={country.code} value={country.code} className="hover:bg-gray-100 focus:bg-blue-50">
-                                    {country.name}
+                        <SelectContent className="bg-white border border-gray-300 shadow-lg z-50 max-h-60 overflow-y-auto">
+                            {countries.map((countryOption) => (
+                                <SelectItem key={countryOption.code} value={countryOption.code} className="hover:bg-gray-100 focus:bg-blue-50">
+                                    {countryOption.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+                    {isLoadingCountries && (
+                        <p className="text-xs text-gray-500 mt-1">Loading countries from server...</p>
+                    )}
                 </div>
 
                 {/* Input Error Display */}

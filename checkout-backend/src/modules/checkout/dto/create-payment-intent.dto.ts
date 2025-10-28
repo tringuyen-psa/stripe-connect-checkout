@@ -117,6 +117,22 @@ export class ConfirmPaymentDto {
   })
   @IsString()
   paymentIntentId: string;
+
+  @ApiPropertyOptional({
+    description: 'Payment Method ID',
+    example: 'pm_1234567890',
+  })
+  @IsOptional()
+  @IsString()
+  paymentMethodId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Stripe Connect account ID',
+    example: 'acct_1234567890',
+  })
+  @IsOptional()
+  @IsString()
+  stripeAccountId?: string;
 }
 
 export class CreatePaymentMethodDto {
