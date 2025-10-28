@@ -1,4 +1,4 @@
-import axios from 'axios';
+// Using fetch API instead of axios to avoid additional dependency
 
 export interface Country {
   id: number;
@@ -54,10 +54,16 @@ export class CountriesService {
    */
   private static async fetchCountriesFromAPI(): Promise<Country[]> {
     try {
-      const response = await axios.get(
+      const response = await fetch(
         `${this.API_URL}/adlibs/findproduct/countries?all=true`
       );
-      this.countries = response.data.data || [];
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      this.countries = data.data || [];
       this.countriesLoaded = true;
       return this.countries;
     } catch (error) {
