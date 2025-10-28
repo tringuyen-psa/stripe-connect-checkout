@@ -214,47 +214,47 @@ export function CheckoutPage({ clientSecret }: CheckoutPageProps) {
                     quantity: product.quantity
                 }))
 
-                // const orderResponse = await apiClient.createOrder({
-                //     paymentIntentId: payment_intent_id,
-                //     items: orderItems,
-                //     customer: {
-                //         email,
-                //         firstName,
-                //         lastName,
-                //         phone,
-                //         address: `${address}${apartment ? `, ${apartment}` : ''}`,
-                //         city,
-                //         state: selectedState,
-                //         country: selectedCountry.name,
-                //         postalCode: zipCode,
-                //     },
-                //     subtotal: getOrderTotal(),
-                //     tax: 0,
-                //     shipping: 0,
-                //     total: getOrderTotal(),
-                //     currency: 'usd',
-                //     paymentMethodId: paymentMethodData.id,
-                //     isExpressCheckout: false,
-                // })
+                const orderResponse = await apiClient.createOrder({
+                    paymentIntentId: paymentIntentId,
+                    items: orderItems,
+                    customer: {
+                        email,
+                        firstName,
+                        lastName,
+                        phone,
+                        address: `${address}${apartment ? `, ${apartment}` : ''}`,
+                        city,
+                        state: selectedState,
+                        country: selectedCountry.name,
+                        postalCode: zipCode,
+                    },
+                    subtotal: getOrderTotal(),
+                    tax: 0,
+                    shipping: 0,
+                    total: getOrderTotal(),
+                    currency: 'usd',
+                    paymentMethodId: paymentMethodData.id,
+                    isExpressCheckout: false,
+                })
 
-                // if (orderResponse.error) {
-                //     throw new Error(orderResponse.error || 'Failed to create order')
-                // }
+                if (orderResponse.error) {
+                    throw new Error(orderResponse.error || 'Failed to create order')
+                }
 
-                // // Redirect to success page with payment details
-                // const orderId = (orderResponse.data as any)?.id
+                // Redirect to success page with payment details
+                const orderId = (orderResponse.data as any)?.id
 
-                // const params = new URLSearchParams({
-                //     orderId: orderId || 'unknown',
-                //     paymentId: payment_intent_id || 'unknown',
-                //     amount: totalAmountForDisplay.toString(),
-                //     currency: 'usd',
-                //     status: 'completed',
-                //     email: email,
-                //     paymentMethod: 'credit-card'
-                // })
+                const params = new URLSearchParams({
+                    orderId: orderId || 'unknown',
+                    paymentId: paymentIntentId || 'unknown',
+                    amount: totalAmountForDisplay.toString(),
+                    currency: 'usd',
+                    status: 'completed',
+                    email: email,
+                    paymentMethod: 'credit-card'
+                })
 
-                // window.location.href = '/success?' + params.toString()
+                window.location.href = '/success?' + params.toString()
             } else {
                 // Handle other payment methods (Shop Pay, etc.)
                 setPaymentError("This payment method is not implemented yet.")
